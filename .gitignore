@@ -1,0 +1,11 @@
+node_modules/
+.next/
+out/
+.env
+.env.local
+data/honest-reps-db.json
+_legacy_prototype/
+_legacy_server_api/
+*.log
+flutter_app/.dart_tool/
+flutter_app/build/

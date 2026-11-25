@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="108" fill="#000000"/>
+  <!-- Left neon green dumbbell plates -->
+  <rect x="44" y="214" width="18" height="84" rx="7" transform="skewX(-6)" fill="#10e760"/>
+  <rect x="70" y="194" width="24" height="124" rx="8" transform="skewX(-6)" fill="#10e760"/>
+  <rect x="102" y="170" width="34" height="172" rx="10" transform="skewX(-6)" fill="#10e760"/>
+  <!-- Center Honest Reps H mark -->
+  <path d="M188 136h56l-18 108h66l18-108h56l-24 128H164l24-128zm-26 144h178l-24 120h-56l16-78h-66l-16 78h-56l24-120z" fill="#ffffff"/>
+  <!-- Right neon green dumbbell plates -->
+  <rect x="376" y="170" width="34" height="172" rx="10" transform="skewX(-6)" fill="#10e760"/>
+  <rect x="418" y="194" width="24" height="124" rx="8" transform="skewX(-6)" fill="#10e760"/>
+  <rect x="450" y="214" width="18" height="84" rx="7" transform="skewX(-6)" fill="#10e760"/>
+</svg>

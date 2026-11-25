@@ -1,0 +1,290 @@
+@import "tailwindcss";
+
+:root {
+  --bg-black: #000000;
+  --bg-card: #0a0a0c;
+  --bg-card-elevated: #121215;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --text-primary: #f5f5f7;
+  --text-secondary: #86868b;
+  --text-muted: #525257;
+
+  /* GitHub-Style Pure Green Contribution Ramp (Dark Mode) */
+  --effort-nolog: #161b22;
+  --effort-nolog-border: rgba(255, 255, 255, 0.04);
+  --effort-very-low: #0e4429;
+  --effort-low: #006d32;
+  --effort-steady: #26a641;
+  --effort-high: #39d353;
+  --effort-very-high: #10e760;
+  --effort-calibrating: #d97706;
+  --effort-rest: #2d333b;
+
+  /* 5-Step Orange Ramp for Estimated (Calibrating) Efforts (<50, 60, 70, 80, 90+) */
+  --est-very-low: #451a03;
+  --est-low: #7c2d12;
+  --est-steady: #c2410c;
+  --est-high: #ea580c;
+  --est-very-high: #ff7a00;
+
+  --accent: #10e760;
+}
+
+/* Apple Light Mode Theme */
+html[data-theme="light"] {
+  --bg-black: #f2f2f7;
+  --bg-card: #ffffff;
+  --bg-card-elevated: #e5e5ea;
+  --border-subtle: rgba(0, 0, 0, 0.08);
+  --border-strong: rgba(0, 0, 0, 0.16);
+  --text-primary: #1d1d1f;
+  --text-secondary: #6e6e73;
+  --text-muted: #8e8e93;
+
+  --effort-nolog: #ebedf0;
+  --effort-nolog-border: rgba(0, 0, 0, 0.05);
+  --effort-very-low: #9be9a8;
+  --effort-low: #40c463;
+  --effort-steady: #30a14e;
+  --effort-high: #216e39;
+  --effort-very-high: #15803d;
+  --effort-calibrating: #d97706;
+  --effort-rest: #cfd5df;
+
+  --est-very-low: #fed7aa;
+  --est-low: #fdba74;
+  --est-steady: #fb923c;
+  --est-high: #f97316;
+  --est-very-high: #c2410c;
+
+  --accent: #16a34a;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  background-color: var(--bg-black);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  overflow-x: hidden;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Hide scrollbars cleanly on Windows/macOS/iOS filter strips */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Apple-style hairline card */
+.apple-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 20px;
+}
+
+html[data-theme="light"] .apple-card {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+/* Effort tile states (WCAG accessible differentiation beyond color alone, UI/UX 8.2) */
+.tile-nolog {
+  background-color: var(--effort-nolog);
+  border: 1px solid var(--effort-nolog-border);
+}
+.tile-very-low {
+  background-color: var(--effort-very-low);
+}
+.tile-low {
+  background-color: var(--effort-low);
+}
+.tile-steady {
+  background-color: var(--effort-steady);
+}
+.tile-high {
+  background-color: var(--effort-high);
+}
+.tile-very-high {
+  background-color: var(--effort-very-high);
+  box-shadow: 0 0 6px rgba(16, 231, 96, 0.22);
+}
+.tile-calibrating {
+  background-color: var(--effort-calibrating);
+}
+.tile-est-very-low {
+  background-color: var(--est-very-low);
+}
+.tile-est-low {
+  background-color: var(--est-low);
+}
+.tile-est-steady {
+  background-color: var(--est-steady);
+}
+.tile-est-high {
+  background-color: var(--est-high);
+}
+.tile-est-very-high {
+  background-color: var(--est-very-high);
+  box-shadow: 0 0 6px rgba(255, 122, 0, 0.24);
+}
+.tile-rest {
+  background-color: var(--effort-rest);
+}
+
+/* Light-mode adaptive overrides for dark-first utility classes across all screens */
+html[data-theme="light"] .bg-black {
+  background-color: #f2f2f7 !important;
+}
+html[data-theme="light"] .bg-black\/85,
+html[data-theme="light"] .bg-black\/90 {
+  background-color: rgba(242, 242, 247, 0.88) !important;
+}
+html[data-theme="light"] .bg-\[\#0a0a0c\],
+html[data-theme="light"] .bg-\[\#0c0c0e\] {
+  background-color: #ffffff !important;
+}
+html[data-theme="light"] .bg-\[\#050506\],
+html[data-theme="light"] .bg-\[\#070709\],
+html[data-theme="light"] .bg-\[\#08080b\] {
+  background-color: #f2f2f7 !important;
+}
+html[data-theme="light"] .bg-\[\#16161a\]\/95 {
+  background-color: rgba(255, 255, 255, 0.96) !important;
+}
+html[data-theme="light"] .text-white,
+html[data-theme="light"] .text-\[\#f5f5f7\],
+html[data-theme="light"] .text-\[\#d1d1d6\] {
+  color: #1d1d1f !important;
+}
+html[data-theme="light"] .text-\[\#a1a1a6\] {
+  color: #48484a !important;
+}
+html[data-theme="light"] .text-\[\#86868b\] {
+  color: #6e6e73 !important;
+}
+html[data-theme="light"] .text-\[\#10e760\] {
+  color: #15803d !important;
+}
+html[data-theme="light"] .border-white\/\[0\.05\],
+html[data-theme="light"] .border-white\/\[0\.06\],
+html[data-theme="light"] .border-white\/\[0\.07\],
+html[data-theme="light"] .border-white\/\[0\.08\],
+html[data-theme="light"] .border-white\/10,
+html[data-theme="light"] .border-white\/12,
+html[data-theme="light"] .border-white\/15 {
+  border-color: rgba(0, 0, 0, 0.09) !important;
+}
+html[data-theme="light"] .divide-white\/\[0\.05\] > :not(:last-child),
+html[data-theme="light"] .divide-white\/\[0\.06\] > :not(:last-child) {
+  border-color: rgba(0, 0, 0, 0.07) !important;
+}
+html[data-theme="light"] .bg-white\/\[0\.02\],
+html[data-theme="light"] .bg-white\/\[0\.03\],
+html[data-theme="light"] .bg-white\/\[0\.04\],
+html[data-theme="light"] .bg-white\/\[0\.05\],
+html[data-theme="light"] .bg-white\/\[0\.06\],
+html[data-theme="light"] .bg-white\/\[0\.07\],
+html[data-theme="light"] .bg-white\/\[0\.08\],
+html[data-theme="light"] .bg-white\/\[0\.1\] {
+  background-color: rgba(0, 0, 0, 0.045) !important;
+}
+html[data-theme="light"] .bg-white\/\[0\.12\],
+html[data-theme="light"] .bg-white\/\[0\.14\],
+html[data-theme="light"] .bg-white\/10 {
+  background-color: rgba(0, 0, 0, 0.09) !important;
+}
+/* Keep active solid white pills dark-on-light inverted cleanly */
+html[data-theme="light"] button.bg-white,
+html[data-theme="light"] a.bg-white {
+  background-color: #1d1d1f !important;
+  color: #ffffff !important;
+  border-color: #1d1d1f !important;
+}
+html[data-theme="light"] .bg-\[\#10e760\] {
+  background-color: #16a34a !important;
+  color: #ffffff !important;
+}
+html[data-theme="light"] .text-black {
+  color: #ffffff !important;
+}
+html[data-theme="light"] .bg-white.text-black {
+  background-color: #1d1d1f !important;
+  color: #ffffff !important;
+}
+
+/* In Dark mode, remove the square container box and screen-blend the black PNG background so only the logo artwork shows cleanly; in Light mode, keep a pure black box for contrast. */
+.brand-icon-box {
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+.brand-icon-box img {
+  mix-blend-mode: screen;
+}
+html[data-theme="light"] .brand-icon-box {
+  background-color: #000000 !important;
+  border: 1px solid rgba(0, 0, 0, 0.14) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+html[data-theme="light"] .brand-icon-box img {
+  mix-blend-mode: normal;
+}
+
+/* Pure iOS Switch */
+.ios-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 48px;
+  height: 28px;
+  border-radius: 9999px;
+  background: #27272a;
+  transition: background-color 0.2s ease;
+  cursor: pointer;
+  flex-shrink: 0;
+  border: none;
+  padding: 2px;
+}
+html[data-theme="light"] .ios-switch {
+  background: #d1d1d6;
+}
+.ios-switch[data-checked="true"] {
+  background: var(--accent);
+}
+.ios-switch-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 9999px;
+  background: #ffffff;
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+.ios-switch[data-checked="true"] .ios-switch-thumb {
+  transform: translateX(20px);
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
