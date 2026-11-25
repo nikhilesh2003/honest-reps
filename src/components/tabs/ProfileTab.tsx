@@ -537,8 +537,12 @@ export function ProfileTab({
 
         {/* Mobile App (Flutter Android & iOS Testing Links) */}
         {(() => {
-          const androidUrl = process.env.NEXT_PUBLIC_ANDROID_APP_URL?.trim();
-          const iosUrl = process.env.NEXT_PUBLIC_IOS_APP_URL?.trim();
+          const androidUrl =
+            process.env.NEXT_PUBLIC_ANDROID_APP_URL?.trim() ||
+            "https://github.com/nikhilesh2003/honest-reps/releases/download/mobile-latest/app-release.apk";
+          const iosUrl =
+            process.env.NEXT_PUBLIC_IOS_APP_URL?.trim() ||
+            "https://github.com/nikhilesh2003/honest-reps/releases/download/mobile-latest/honest-reps-ios-unsigned.ipa";
           return (
             <div className="apple-card p-4 space-y-3">
               <div className="flex items-start justify-between gap-3">

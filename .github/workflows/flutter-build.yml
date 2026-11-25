@@ -7,6 +7,9 @@ on:
       - "flutter_app/**"
       - ".github/workflows/flutter-build.yml"
 
+permissions:
+  contents: write
+
 jobs:
   build-android:
     runs-on: ubuntu-latest
@@ -82,3 +85,24 @@ jobs:
         with:
           name: honest-reps-ios-ipa
           path: flutter_app/build/ios/ipa/honest-reps-ios-unsigned.ipa
+
+  publish-release:
+    needs: [build-android, build-ios]
+    if: ${{ always() && (needs.build-android.result == 'success' || needs.build-ios.result == 'success') }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download built artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+
+      - name: Publish to rolling mobile-latest release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: mobile-latest
+          name: Mobile App (Latest Testing Build)
+          prerelease: true
+          make_latest: true
+          files: |
+            release-assets/**/*
