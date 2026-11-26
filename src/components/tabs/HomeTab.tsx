@@ -507,12 +507,34 @@ export function HomeTab({
 
                 const fillColor = getBarColorStyle(day.band, isToday, day.status);
                 const canInspect = day.status !== "No log";
+                const isScored = day.status === "Scored" && day.effortScore !== null;
+                const isCal = day.status === "Calibrating";
+
+                const trackGlowClass = isToday
+                  ? isCal
+                    ? "ring-1 ring-amber-400/80 shadow-[0_0_22px_rgba(255,159,10,0.4)]"
+                    : "ring-1 ring-[#30d158]/80 shadow-[0_0_22px_rgba(48,209,88,0.42)]"
+                  : isScored
+                  ? "ring-1 ring-[#30d158]/45 shadow-[0_0_16px_rgba(48,209,88,0.28)]"
+                  : isCal
+                  ? "ring-1 ring-amber-400/45 shadow-[0_0_16px_rgba(255,159,10,0.28)]"
+                  : day.isRest
+                  ? "border border-dashed border-white/15"
+                  : "border border-white/[0.06]";
 
                 return (
                   <div key={day.date} className="flex flex-col items-center gap-1.5">
                     <span
                       className={`text-[11px] font-medium leading-none ${
-                        isToday ? "text-[#30d158] font-semibold" : "text-[#86868b]"
+                        isToday
+                          ? isCal
+                            ? "text-amber-400 font-semibold glow-amber"
+                            : "text-[#30d158] font-semibold glow-score"
+                          : isScored
+                          ? "text-[#30d158]/90 glow-score"
+                          : isCal
+                          ? "text-amber-400/90 glow-amber"
+                          : "text-[#86868b]"
                       }`}
                     >
                       {day.dayLetter}
@@ -535,15 +557,11 @@ export function HomeTab({
                         canInspect
                           ? "cursor-pointer hover:brightness-110 active:scale-95"
                           : "cursor-default"
-                      } ${
-                        isToday
-                          ? "ring-1 ring-[#30d158]/70 shadow-[0_0_18px_rgba(48,209,88,0.28)]"
-                          : ""
-                      }`}
+                      } ${trackGlowClass}`}
                     >
-                      {day.status === "Scored" && day.effortScore !== null ? (
+                      {isScored ? (
                         <div
-                          className="w-full rounded-[9px] flex items-start justify-center pt-1.5 transition-all duration-500 shadow-[0_0_12px_rgba(48,209,88,0.3)]"
+                          className="w-full rounded-[9px] flex items-start justify-center pt-1.5 transition-all duration-500 shadow-[0_0_14px_rgba(48,209,88,0.45)]"
                           style={{
                             height: `${heightPct}%`,
                             backgroundColor: fillColor,
@@ -551,7 +569,7 @@ export function HomeTab({
                         >
                           <span
                             className={`text-[10px] font-semibold tabular-nums leading-none ${
-                              day.effortScore >= 45 || isToday
+                              (day.effortScore ?? 0) >= 45 || isToday
                                 ? "text-black"
                                 : "text-[#dcfce7]"
                             }`}
@@ -559,9 +577,9 @@ export function HomeTab({
                             {day.effortScore}
                           </span>
                         </div>
-                      ) : day.status === "Calibrating" ? (
+                      ) : isCal ? (
                         <div
-                          className="w-full rounded-[9px] flex items-start justify-center pt-1.5 transition-all duration-500"
+                          className="w-full rounded-[9px] flex items-start justify-center pt-1.5 transition-all duration-500 shadow-[0_0_14px_rgba(255,159,10,0.45)]"
                           style={{
                             height: `${heightPct}%`,
                             backgroundColor: fillColor,
@@ -588,7 +606,15 @@ export function HomeTab({
 
                     <span
                       className={`text-[10px] leading-none tabular-nums truncate max-w-full ${
-                        isToday ? "text-[#30d158] font-medium" : "text-[#636366]"
+                        isToday
+                          ? isCal
+                            ? "text-amber-400 font-semibold glow-amber"
+                            : "text-[#30d158] font-semibold glow-score"
+                          : isScored
+                          ? "text-[#30d158]/80"
+                          : isCal
+                          ? "text-amber-400/80"
+                          : "text-[#636366]"
                       }`}
                     >
                       {isToday && dayShift === 0 ? "Today" : day.date.slice(8)}

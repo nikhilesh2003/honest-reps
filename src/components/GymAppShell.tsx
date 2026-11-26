@@ -999,20 +999,20 @@ export function GymAppShell() {
 
       {/* Minimal Apple Top Bar */}
       <header className="sticky top-0 z-30 w-full bg-black/80 backdrop-blur-2xl border-b border-[#30d158]/15 shadow-[0_4px_24px_rgba(48,209,88,0.08)] pt-safe">
-        <div className="max-w-[460px] mx-auto px-4 h-14 flex items-center justify-between gap-2">
+        <div className="max-w-[460px] mx-auto px-4 h-16 flex items-center justify-between gap-2">
           <button
             type="button"
             onClick={() => switchTab("home")}
-            className="flex items-center gap-2.5 cursor-pointer"
+            className="flex items-center gap-3 cursor-pointer"
           >
-            <span className="brand-icon-box w-8 h-8 rounded-[9px] flex items-center justify-center shrink-0 overflow-hidden">
+            <span className="brand-icon-box w-16 h-12 rounded-[12px] flex items-center justify-center shrink-0 overflow-hidden">
               <img
                 src="/icons/logo-icon.png"
                 alt="Honest Reps"
-                className="w-8 h-8 object-contain"
+                className="w-16 h-16 max-w-none object-contain scale-[1.22]"
               />
             </span>
-            <span className="text-[16px] font-semibold tracking-[-0.02em] text-white">
+            <span className="text-[17px] font-semibold tracking-[-0.02em] text-white">
               Honest Reps
             </span>
           </button>

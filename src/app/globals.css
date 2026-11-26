@@ -401,12 +401,12 @@ html[data-theme="light"] .bg-white.text-black {
   color: #ffffff !important;
 }
 
-/* Brand mark blending + luminous emblem glow */
+/* Brand mark blending: NO filter on parent (filter isolates stacking context and breaks mix-blend-mode: screen) */
 .brand-icon-box {
   background-color: transparent !important;
   border: none !important;
   box-shadow: none !important;
-  filter: drop-shadow(0 0 12px rgba(48, 209, 88, 0.35));
+  filter: none !important;
 }
 .brand-icon-box img {
   mix-blend-mode: screen;
@@ -414,7 +414,7 @@ html[data-theme="light"] .bg-white.text-black {
 html[data-theme="light"] .brand-icon-box {
   background-color: #000000 !important;
   border: 1px solid rgba(0, 0, 0, 0.12) !important;
-  filter: drop-shadow(0 2px 8px rgba(22, 163, 74, 0.2));
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.2);
 }
 html[data-theme="light"] .brand-icon-box img {
   mix-blend-mode: normal;
