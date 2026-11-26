@@ -23,5 +23,5 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "_legacy_prototype", "_legacy_server_api", "flutter_app"]
+  "exclude": ["node_modules", "_legacy_prototype", "_legacy_server_api"]
 }
