@@ -9,7 +9,7 @@
     "lint": "next lint",
     "test:effort": "npx tsx src/lib/__tests__/effort.test.ts",
     "test:notifications": "npx tsx src/lib/__tests__/notifications.test.ts",
-    "test": "npx tsx src/lib/__tests__/effort.test.ts && npx tsx src/lib/__tests__/notifications.test.ts && npx tsx src/lib/__tests__/gym_and_scores.test.ts && npx tsx src/lib/__tests__/friendships.test.ts && npx tsx src/lib/__tests__/gym_location.test.ts && npx tsx src/lib/__tests__/recovery.test.ts && npx tsx src/lib/__tests__/milestones.test.ts"
+    "test": "npx tsx src/lib/__tests__/effort.test.ts && npx tsx src/lib/__tests__/notifications.test.ts && npx tsx src/lib/__tests__/gym_and_scores.test.ts && npx tsx src/lib/__tests__/friendships.test.ts && npx tsx src/lib/__tests__/gym_location.test.ts && npx tsx src/lib/__tests__/recovery.test.ts && npx tsx src/lib/__tests__/milestones.test.ts && npx tsx src/lib/__tests__/ux_enhancements.test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

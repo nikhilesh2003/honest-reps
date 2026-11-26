@@ -22,6 +22,10 @@ import {
   Monitor,
   MessageCircle,
   MapPin,
+  Pencil,
+  Check,
+  X,
+  Image as ImageIcon,
 } from "lucide-react";
 import { AppStatePayload } from "@/lib/client-types";
 import { GymLocationConfig } from "@/lib/gym-location";
@@ -43,13 +47,21 @@ import {
 } from "../ThemeSync";
 import {
   apiBuildExport,
+  apiDeleteWeightLog,
   apiLibraryAction,
   apiLogWeight,
   apiUpdateNotifications,
   apiUpdateProfile,
+  apiUpdateWeightLog,
 } from "@/lib/client-engine";
 import { ActiveStatus, HeightUnit, ThemePreference, WeightUnit } from "@/lib/types";
-import { formatHeight, formatWeight } from "@/lib/effort";
+import {
+  cmToFeetInches,
+  feetInchesToCm,
+  formatHeight,
+  formatWeight,
+  validateUsernameInput,
+} from "@/lib/effort";
 import {
   isHapticsEnabled,
   setHapticsEnabled,
@@ -59,6 +71,7 @@ import { computeUserMilestones } from "@/lib/milestones";
 import { YearHeatmap } from "../YearHeatmap";
 import { MilestoneBadgesCard } from "../ui/MilestoneBadgesCard";
 import { BottomSheet } from "../ui/BottomSheet";
+import { ShareCardSheet } from "../modals/ShareCardSheet";
 
 interface ProfileTabProps {
   state: AppStatePayload;
@@ -96,32 +109,38 @@ export function ProfileTab({
   const [weightSheetOpen, setWeightSheetOpen] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [shareCardOpen, setShareCardOpen] = useState(false);
 
   // Edit profile form state
   const [name, setName] = useState(profile.name);
   const [username, setUsername] = useState(profile.username);
   const [heightCm, setHeightCm] = useState(String(profile.heightCm));
+  const [heightFeet, setHeightFeet] = useState("5");
+  const [heightInches, setHeightInches] = useState("10");
   const [activeStatus, setActiveStatus] = useState<ActiveStatus>(profile.activeStatus);
   const [age, setAge] = useState(profile.age ? String(profile.age) : "");
   const [sex, setSex] = useState(profile.sex || "");
   const [goal, setGoal] = useState(profile.goal || "");
   const [savingProfile, setSavingProfile] = useState(false);
 
-  // Log new weight form
+  // Log / Edit weight form
   const [newWeight, setNewWeight] = useState("");
   const [savingWeight, setSavingWeight] = useState(false);
+  const [editingWeightId, setEditingWeightId] = useState<string | null>(null);
+  const [editingWeightVal, setEditingWeightVal] = useState("");
 
-  // Personal library form (FR-67)
+  // Personal library form
   const [newExName, setNewExName] = useState("");
   const [newExGroup, setNewExGroup] = useState("Chest");
   const [newGroupName, setNewGroupName] = useState("");
 
-  // Export & Copy loading
   const [copyingLog, setCopyingLog] = useState(false);
   const [themePref, setThemePref] = useState<ThemePreference>(() =>
     getStoredThemePreference()
   );
   const [hapticsOn, setHapticsOn] = useState<boolean>(() => isHapticsEnabled());
+
+  const usernameCheck = useMemo(() => validateUsernameInput(username), [username]);
 
   const handleToggleHaptics = () => {
     const next = !hapticsOn;
@@ -151,6 +170,9 @@ export function ProfileTab({
     setName(profile.name);
     setUsername(profile.username);
     setHeightCm(String(profile.heightCm));
+    const ftIn = cmToFeetInches(profile.heightCm);
+    setHeightFeet(String(ftIn.feet));
+    setHeightInches(String(ftIn.inches));
     setActiveStatus(profile.activeStatus);
     setAge(profile.age ? String(profile.age) : "");
     setSex(profile.sex || "");
@@ -159,12 +181,21 @@ export function ProfileTab({
   };
 
   const handleSaveProfile = async () => {
+    if (!usernameCheck.valid) {
+      onToast("Username must be 3–24 letters, numbers, or _", "error");
+      return;
+    }
     setSavingProfile(true);
     try {
+      const resolvedHeightCm =
+        profile.heightUnit === "ft-in"
+          ? feetInchesToCm(Number(heightFeet) || 5, Number(heightInches) || 9)
+          : Number(heightCm);
+
       const data = await apiUpdateProfile({
         name,
-        username,
-        heightCm: Number(heightCm),
+        username: usernameCheck.cleaned,
+        heightCm: resolvedHeightCm,
         activeStatus,
         age: age ? Number(age) : null,
         sex,
@@ -208,7 +239,27 @@ export function ProfileTab({
     }
   };
 
-  // Explicit User Request: Export This Month's Log (CSV / JSON)
+  const handleSaveEditedWeight = async (id: string) => {
+    const num = Number(editingWeightVal);
+    if (!num) return;
+    const res = await apiUpdateWeightLog(id, num);
+    if (res.ok) {
+      onToast("Weight entry updated");
+      setEditingWeightId(null);
+      onRefresh();
+    } else {
+      onToast(res.error || "Invalid weight", "error");
+    }
+  };
+
+  const handleDeleteWeight = async (id: string) => {
+    const res = await apiDeleteWeightLog(id);
+    if (res.ok) {
+      onToast("Weight entry removed");
+      onRefresh();
+    }
+  };
+
   const handleExportMonthLog = (format: "csv" | "json") => {
     const exp = apiBuildExport(format, monthStats.monthPrefix);
     const blob = new Blob([exp.content], { type: exp.mime });
@@ -223,7 +274,6 @@ export function ProfileTab({
     onToast(`Exported ${monthStats.monthPrefix} (${format.toUpperCase()})`);
   };
 
-  // Explicit User Request: Copy This Month's Log
   const handleCopyMonthLog = async () => {
     setCopyingLog(true);
     try {
@@ -303,7 +353,7 @@ export function ProfileTab({
         </button>
       </div>
 
-      {/* FR-60 Summary Figures */}
+      {/* Summary Figures */}
       <div className="grid grid-cols-3 gap-2.5">
         <div className="apple-card p-3.5 text-center">
           <div className="text-[22px] font-bold text-[#10e760] tabular-nums">
@@ -331,7 +381,7 @@ export function ProfileTab({
         </div>
       </div>
 
-      {/* FR-57–FR-60: 365-Day Year Activity Grid (Single Screen Fit + Tap Detail) */}
+      {/* 365-Day Year Activity Grid */}
       <YearHeatmap
         summaries365={state.summaries365}
         thresholds={state.appSettings.gridThresholds}
@@ -346,28 +396,40 @@ export function ProfileTab({
           Settings
         </div>
 
-        {/* Monthly Log Export & Copy (Explicitly Requested by User) */}
+        {/* Monthly Log Export, Copy & OLED Summary Card */}
         <div className="apple-card p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-[13px] font-semibold text-white">This Month&apos;s Log</span>
+            <span className="text-[13px] font-semibold text-white">
+              Share &amp; Export
+            </span>
             <span className="text-[11px] text-[#86868b] tabular-nums">
               {monthStats.monthPrefix}
             </span>
           </div>
+
+          <button
+            type="button"
+            onClick={() => setShareCardOpen(true)}
+            className="w-full h-11 px-3.5 rounded-2xl bg-[#10e760] hover:bg-[#25d658] text-black text-[13px] font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
+          >
+            <ImageIcon className="w-4 h-4 shrink-0" />
+            Share OLED Summary Card
+          </button>
+
           <div className="grid grid-cols-2 gap-2.5">
             <button
               type="button"
               onClick={() => handleExportMonthLog("csv")}
-              className="h-11 px-3 rounded-2xl bg-[#10e760] hover:bg-[#25d658] text-black text-[13px] font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
+              className="h-10 px-3 rounded-2xl bg-white/[0.07] hover:bg-white/[0.12] border border-white/[0.1] text-white text-[13px] font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
             >
               <Download className="w-4 h-4 shrink-0" />
-              Export Log
+              Export CSV
             </button>
             <button
               type="button"
               disabled={copyingLog}
               onClick={handleCopyMonthLog}
-              className="h-11 px-3 rounded-2xl bg-white/[0.07] hover:bg-white/[0.12] border border-white/[0.1] text-white text-[13px] font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
+              className="h-10 px-3 rounded-2xl bg-white/[0.07] hover:bg-white/[0.12] border border-white/[0.1] text-white text-[13px] font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
             >
               <Copy className="w-4 h-4 shrink-0" />
               {copyingLog ? "Copying..." : "Copy Log"}
@@ -413,7 +475,7 @@ export function ProfileTab({
           </button>
         </div>
 
-        {/* Profile & Body Metrics (FR-2 to FR-5, FR-65) */}
+        {/* Profile & Body Metrics */}
         <div className="apple-card divide-y divide-white/[0.06]">
           <button
             type="button"
@@ -422,7 +484,7 @@ export function ProfileTab({
           >
             <span className="flex items-center gap-3 text-[14px] font-medium text-white">
               <User className="w-4 h-4 text-[#86868b]" />
-              Profile & Metrics
+              Profile &amp; Metrics
             </span>
             <span className="flex items-center gap-1.5 text-[12px] text-[#86868b] tabular-nums">
               {formatHeight(profile.heightCm, profile.heightUnit)} · {profile.activeStatus}
@@ -432,7 +494,10 @@ export function ProfileTab({
 
           <button
             type="button"
-            onClick={() => setWeightSheetOpen(true)}
+            onClick={() => {
+              setEditingWeightId(null);
+              setWeightSheetOpen(true);
+            }}
             className="w-full px-4 py-3.5 flex items-center justify-between hover:bg-white/[0.02] transition-colors cursor-pointer"
           >
             <span className="flex items-center gap-3 text-[14px] font-medium text-white">
@@ -445,7 +510,7 @@ export function ProfileTab({
             </span>
           </button>
 
-          {/* Units Selection (FR-4) */}
+          {/* Units Selection */}
           <div className="px-4 py-3.5 flex items-center justify-between gap-3">
             <span className="text-[14px] font-medium text-white">Units</span>
             <div className="flex items-center gap-2">
@@ -454,7 +519,9 @@ export function ProfileTab({
                   <button
                     key={u}
                     type="button"
-                    onClick={() => handleQuickPatch({ weightUnit: u }, `Weight unit set to ${u}`)}
+                    onClick={() =>
+                      handleQuickPatch({ weightUnit: u }, `Weight unit set to ${u}`)
+                    }
                     className={`px-2.5 py-1 rounded-md text-[11px] font-semibold cursor-pointer ${
                       profile.weightUnit === u
                         ? "bg-white text-black"
@@ -470,7 +537,9 @@ export function ProfileTab({
                   <button
                     key={u}
                     type="button"
-                    onClick={() => handleQuickPatch({ heightUnit: u }, `Height unit set to ${u}`)}
+                    onClick={() =>
+                      handleQuickPatch({ heightUnit: u }, `Height unit set to ${u}`)
+                    }
                     className={`px-2.5 py-1 rounded-md text-[11px] font-semibold cursor-pointer ${
                       profile.heightUnit === u
                         ? "bg-white text-black"
@@ -484,7 +553,7 @@ export function ProfileTab({
             </div>
           </div>
 
-          {/* Appearance: System / Light / Dark Theme */}
+          {/* Appearance */}
           <div className="px-4 py-3.5 flex items-center justify-between gap-3">
             <span className="text-[14px] font-medium text-white">Appearance</span>
             <div className="flex bg-black border border-white/10 rounded-xl p-0.5 gap-0.5">
@@ -515,9 +584,7 @@ export function ProfileTab({
           {/* Haptic Feedback Toggle */}
           <div className="px-4 py-3.5 flex items-center justify-between gap-3">
             <div>
-              <span className="text-[14px] font-medium text-white">
-                Haptic Feedback
-              </span>
+              <span className="text-[14px] font-medium text-white">Haptic Feedback</span>
               <p className="text-[11px] text-[#86868b] mt-0.5">
                 Tactile tap on supported phones
               </p>
@@ -535,7 +602,7 @@ export function ProfileTab({
           </div>
         </div>
 
-        {/* Privacy: FR-69 Share Workout Details Switch */}
+        {/* Privacy Switch */}
         <div className="apple-card p-4">
           <div className="flex items-center justify-between gap-4">
             <div className="min-w-0">
@@ -575,7 +642,7 @@ export function ProfileTab({
           >
             <span className="flex items-center gap-3 text-[14px] font-medium text-white">
               <Dumbbell className="w-4 h-4 text-[#86868b]" />
-              Exercises & Muscle Groups
+              Exercises &amp; Muscle Groups
             </span>
             <ChevronRight className="w-4 h-4 text-[#525257]" />
           </button>
@@ -590,7 +657,9 @@ export function ProfileTab({
               Notifications
             </span>
             <span className="flex items-center gap-1.5 text-[12px] text-[#86868b]">
-              {notificationSettings.dailyPromptEnabled ? notificationSettings.dailyPromptTime : "Off"}
+              {notificationSettings.dailyPromptEnabled
+                ? notificationSettings.dailyPromptTime
+                : "Off"}
               <ChevronRight className="w-4 h-4 text-[#525257]" />
             </span>
           </button>
@@ -618,7 +687,6 @@ export function ProfileTab({
             </button>
           )}
 
-          {/* FR-46: Admin area visible ONLY to users with admin role */}
           {state.isAdmin && (
             <Link
               href="/admin"
@@ -652,7 +720,14 @@ export function ProfileTab({
         </div>
       </div>
 
-      {/* Edit Profile Sheet (FR-2 to FR-4, FR-65) */}
+      <ShareCardSheet
+        open={shareCardOpen}
+        onClose={() => setShareCardOpen(false)}
+        state={state}
+        onToast={onToast}
+      />
+
+      {/* Edit Profile Sheet (Unit-aware Height + Live Username Hint) */}
       <BottomSheet
         open={editProfileOpen}
         onClose={() => setEditProfileOpen(false)}
@@ -669,7 +744,16 @@ export function ProfileTab({
             />
           </div>
           <div>
-            <label className="block text-[11px] text-[#86868b] mb-1">Username</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-[11px] text-[#86868b]">Username</label>
+              <span
+                className={`text-[10px] font-mono ${
+                  usernameCheck.valid ? "text-[#10e760]" : "text-amber-400"
+                }`}
+              >
+                {usernameCheck.hint}
+              </span>
+            </div>
             <input
               type="text"
               value={username}
@@ -678,19 +762,63 @@ export function ProfileTab({
             />
           </div>
           <div className="grid grid-cols-2 gap-2.5">
+            {profile.heightUnit === "cm" ? (
+              <div>
+                <label className="block text-[11px] text-[#86868b] mb-1">
+                  Height (cm)
+                </label>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  value={heightCm}
+                  onChange={(e) => setHeightCm(e.target.value)}
+                  className="w-full h-11 px-3.5 rounded-xl bg-black border border-white/12 text-white text-[14px] tabular-nums focus:outline-none focus:border-[#10e760]"
+                />
+              </div>
+            ) : (
+              <div>
+                <label className="block text-[11px] text-[#86868b] mb-1">
+                  Height (ft / in)
+                </label>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <div className="relative">
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      min={3}
+                      max={8}
+                      value={heightFeet}
+                      onChange={(e) => setHeightFeet(e.target.value)}
+                      className="w-full h-11 pl-3 pr-6 rounded-xl bg-black border border-white/12 text-white text-[14px] tabular-nums focus:outline-none focus:border-[#10e760]"
+                    />
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-[#86868b]">
+                      ft
+                    </span>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      min={0}
+                      max={11}
+                      value={heightInches}
+                      onChange={(e) => setHeightInches(e.target.value)}
+                      className="w-full h-11 pl-3 pr-6 rounded-xl bg-black border border-white/12 text-white text-[14px] tabular-nums focus:outline-none focus:border-[#10e760]"
+                    />
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-[#86868b]">
+                      in
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
             <div>
-              <label className="block text-[11px] text-[#86868b] mb-1">Height (cm)</label>
+              <label className="block text-[11px] text-[#86868b] mb-1">
+                Age (optional)
+              </label>
               <input
                 type="number"
-                value={heightCm}
-                onChange={(e) => setHeightCm(e.target.value)}
-                className="w-full h-11 px-3.5 rounded-xl bg-black border border-white/12 text-white text-[14px] tabular-nums focus:outline-none focus:border-[#10e760]"
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] text-[#86868b] mb-1">Age (optional)</label>
-              <input
-                type="number"
+                inputMode="numeric"
                 value={age}
                 onChange={(e) => setAge(e.target.value)}
                 className="w-full h-11 px-3.5 rounded-xl bg-black border border-white/12 text-white text-[14px] tabular-nums focus:outline-none focus:border-[#10e760]"
@@ -698,7 +826,9 @@ export function ProfileTab({
             </div>
           </div>
           <div>
-            <label className="block text-[11px] text-[#86868b] mb-1">Activity Status</label>
+            <label className="block text-[11px] text-[#86868b] mb-1">
+              Activity Status
+            </label>
             <select
               value={activeStatus}
               onChange={(e) => setActiveStatus(e.target.value as ActiveStatus)}
@@ -712,7 +842,9 @@ export function ProfileTab({
           </div>
           <div className="grid grid-cols-2 gap-2.5">
             <div>
-              <label className="block text-[11px] text-[#86868b] mb-1">Sex (optional)</label>
+              <label className="block text-[11px] text-[#86868b] mb-1">
+                Sex (optional)
+              </label>
               <select
                 value={sex}
                 onChange={(e) => setSex(e.target.value)}
@@ -725,7 +857,9 @@ export function ProfileTab({
               </select>
             </div>
             <div>
-              <label className="block text-[11px] text-[#86868b] mb-1">Goal (optional)</label>
+              <label className="block text-[11px] text-[#86868b] mb-1">
+                Goal (optional)
+              </label>
               <input
                 type="text"
                 value={goal}
@@ -745,17 +879,18 @@ export function ProfileTab({
         </div>
       </BottomSheet>
 
-      {/* Log Weight Sheet (FR-5) */}
+      {/* Log & Manage Weight Sheet (Add + Edit + Delete) */}
       <BottomSheet
         open={weightSheetOpen}
         onClose={() => setWeightSheetOpen(false)}
         title="Log Weight"
-        subtitle="Stored as a dated entry in your private weight history."
+        subtitle="Stored privately. Edit or remove mistyped entries below."
       >
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <input
               type="number"
+              inputMode="decimal"
               step="0.1"
               value={newWeight}
               onChange={(e) => setNewWeight(e.target.value)}
@@ -784,30 +919,87 @@ export function ProfileTab({
           </button>
 
           {state.weightLogs.length > 0 && (
-            <div className="space-y-1.5 pt-2 border-t border-white/[0.06]">
+            <div className="space-y-1.5 pt-2 border-t border-white/[0.06] max-h-56 overflow-y-auto no-scrollbar">
               <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
                 Recent Entries
               </div>
               {[...state.weightLogs]
                 .reverse()
-                .slice(0, 6)
-                .map((w) => (
-                  <div
-                    key={w.id}
-                    className="flex items-center justify-between text-[13px] py-1"
-                  >
-                    <span className="text-[#86868b] tabular-nums">{w.date}</span>
-                    <span className="text-white font-medium tabular-nums">
-                      {formatWeight(w.weightKg, profile.weightUnit)}
-                    </span>
-                  </div>
-                ))}
+                .slice(0, 12)
+                .map((w) => {
+                  const isEditing = editingWeightId === w.id;
+                  const displayVal =
+                    profile.weightUnit === "lb"
+                      ? Number((w.weightKg * 2.20462).toFixed(1))
+                      : Number(w.weightKg.toFixed(1));
+                  return (
+                    <div
+                      key={w.id}
+                      className="flex items-center justify-between gap-2 text-[13px] py-1.5"
+                    >
+                      <span className="text-[#86868b] tabular-nums">{w.date}</span>
+                      {isEditing ? (
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="number"
+                            inputMode="decimal"
+                            step="0.1"
+                            value={editingWeightVal}
+                            onChange={(e) => setEditingWeightVal(e.target.value)}
+                            className="w-20 h-8 px-2 rounded-lg bg-black border border-[#10e760] text-white text-[13px] tabular-nums focus:outline-none"
+                          />
+                          <button
+                            type="button"
+                            aria-label="Save weight edit"
+                            onClick={() => handleSaveEditedWeight(w.id)}
+                            className="w-7 h-7 rounded-lg bg-[#10e760] text-black flex items-center justify-center cursor-pointer"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            aria-label="Cancel weight edit"
+                            onClick={() => setEditingWeightId(null)}
+                            className="w-7 h-7 rounded-lg bg-white/[0.08] text-white flex items-center justify-center cursor-pointer"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-white font-medium tabular-nums mr-1">
+                            {formatWeight(w.weightKg, profile.weightUnit)}
+                          </span>
+                          <button
+                            type="button"
+                            aria-label={`Edit weight on ${w.date}`}
+                            onClick={() => {
+                              setEditingWeightId(w.id);
+                              setEditingWeightVal(String(displayVal));
+                            }}
+                            className="w-7 h-7 rounded-lg text-[#6e6e73] hover:text-white hover:bg-white/[0.06] flex items-center justify-center cursor-pointer"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            aria-label={`Delete weight on ${w.date}`}
+                            onClick={() => handleDeleteWeight(w.id)}
+                            className="w-7 h-7 rounded-lg text-[#6e6e73] hover:text-red-400 hover:bg-white/[0.06] flex items-center justify-center cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
             </div>
           )}
         </div>
       </BottomSheet>
 
-      {/* Personal Exercises & Muscle Groups Manager Sheet (FR-67) */}
+      {/* Personal Exercises & Muscle Groups Manager Sheet */}
       <BottomSheet
         open={libraryOpen}
         onClose={() => setLibraryOpen(false)}
@@ -815,7 +1007,6 @@ export function ProfileTab({
         subtitle="Add your own exercises or hide defaults."
       >
         <div className="space-y-5">
-          {/* Add personal exercise */}
           <div className="space-y-2">
             <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
               Add Exercise
@@ -856,7 +1047,6 @@ export function ProfileTab({
             </div>
           </div>
 
-          {/* Add personal muscle group */}
           <div className="space-y-2">
             <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
               Add Muscle Group
@@ -886,7 +1076,6 @@ export function ProfileTab({
             </div>
           </div>
 
-          {/* Personal Exercises */}
           {personalExercises.length > 0 && (
             <div className="space-y-1.5">
               <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
@@ -918,7 +1107,6 @@ export function ProfileTab({
             </div>
           )}
 
-          {/* Default Exercises (hide/unhide per FR-67) */}
           <div className="space-y-1.5">
             <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
               Default Library
@@ -958,7 +1146,7 @@ export function ProfileTab({
         </div>
       </BottomSheet>
 
-      {/* Notifications Settings Sheet (FR-40 to FR-45, NFR-8) */}
+      {/* Notifications Settings Sheet */}
       <BottomSheet
         open={notifOpen}
         onClose={() => setNotifOpen(false)}
@@ -1049,7 +1237,9 @@ export function ProfileTab({
 
             <div className="flex items-center justify-between gap-3">
               <div>
-                <div className="text-[14px] font-medium text-white">Streak & Month Summaries</div>
+                <div className="text-[14px] font-medium text-white">
+                  Streak &amp; Month Summaries
+                </div>
               </div>
               <button
                 type="button"
@@ -1065,7 +1255,6 @@ export function ProfileTab({
               </button>
             </div>
 
-            {/* Quiet Hours (FR-43) */}
             <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between">
               <span className="text-[13px] font-medium text-white">Quiet Hours</span>
               <div className="flex items-center gap-1.5">
@@ -1085,7 +1274,6 @@ export function ProfileTab({
               </div>
             </div>
 
-            {/* Web Push Toggle & Instant Test */}
             <div className="pt-2 flex items-center justify-between gap-2">
               <div>
                 <div className="text-[13px] font-medium text-white">Web Push</div>
@@ -1114,7 +1302,10 @@ export function ProfileTab({
                             "Reminders and workout alerts are working.",
                             "test-notification"
                           );
-                      onToast(sent ? "Test notification sent" : "Blocked by browser settings", sent ? "success" : "error");
+                      onToast(
+                        sent ? "Test notification sent" : "Blocked by browser settings",
+                        sent ? "success" : "error"
+                      );
                     }}
                     className="px-2.5 py-1 rounded-full bg-white/[0.07] hover:bg-white/[0.12] text-[11px] font-medium text-[#10e760] cursor-pointer"
                   >

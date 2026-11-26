@@ -12,12 +12,28 @@ interface LeaderboardTabProps {
   state: AppStatePayload;
   onRefresh: () => void;
   onNavigateFriends: () => void;
+  onNavigateProfile?: () => void;
+}
+
+function getRankBadgeStyle(rankIndex: number, isEst: boolean): string {
+  if (isEst) return "bg-white/[0.04] text-[#86868b] border-white/[0.08]";
+  if (rankIndex === 0) {
+    return "bg-[#10e760]/18 text-[#10e760] border-[#10e760]/50";
+  }
+  if (rankIndex === 1) {
+    return "bg-white/[0.1] text-white border-white/25";
+  }
+  if (rankIndex === 2) {
+    return "bg-amber-500/15 text-amber-300 border-amber-500/35";
+  }
+  return "bg-transparent text-[#86868b] border-transparent";
 }
 
 export function LeaderboardTab({
   state,
   onRefresh,
   onNavigateFriends,
+  onNavigateProfile,
 }: LeaderboardTabProps) {
   const [period, setPeriod] = useState<"today" | "month">("month");
   const [scoreReason, setScoreReason] = useState<ScoreReasonData | null>(null);
@@ -55,12 +71,16 @@ export function LeaderboardTab({
     return { ranked: withScore, unranked: unscored };
   }, [state.leaderboard, period]);
 
-  const openFriendDetail = async (userId: string) => {
+  const handleSelectMember = async (entry: LeaderboardEntry) => {
+    if (entry.isMe && onNavigateProfile) {
+      onNavigateProfile();
+      return;
+    }
     setDetailOpen(true);
     setDetailLoading(true);
     setFriendDetail(null);
     try {
-      const data = await apiGetFriendDetail(userId);
+      const data = await apiGetFriendDetail(entry.userId);
       if (data) setFriendDetail(data as FriendDetailPayload);
     } finally {
       setDetailLoading(false);
@@ -83,7 +103,7 @@ export function LeaderboardTab({
         </button>
       </div>
 
-      {/* Segmented Control: Today | This Month (FR-36) */}
+      {/* Segmented Control: Today | This Month */}
       <div className="grid grid-cols-2 p-1 rounded-2xl bg-[#0a0a0c] border border-white/[0.08]">
         <button
           type="button"
@@ -105,7 +125,7 @@ export function LeaderboardTab({
         </button>
       </div>
 
-      {/* Ranked Leaderboard (FR-38: tapping any score number opens reason popup) */}
+      {/* Ranked Leaderboard */}
       <div className="apple-card divide-y divide-white/[0.06] overflow-hidden">
         {ranked.map((entry, idx) => {
           const score = period === "today" ? entry.todayScore : entry.monthEffort;
@@ -113,17 +133,23 @@ export function LeaderboardTab({
             period === "today"
               ? entry.todayStatus === "Calibrating"
               : entry.isMonthCalibrating;
+          const badgeCls = getRankBadgeStyle(idx, isEst);
+
           return (
             <div
               key={entry.userId}
-              className="p-4 flex items-center justify-between gap-3 hover:bg-white/[0.02] transition-colors"
+              className={`p-4 flex items-center justify-between gap-3 transition-colors ${
+                entry.isMe ? "bg-[#10e760]/[0.03]" : "hover:bg-white/[0.02]"
+              }`}
             >
               <button
                 type="button"
-                onClick={() => openFriendDetail(entry.userId)}
+                onClick={() => handleSelectMember(entry)}
                 className="flex items-center gap-3 min-w-0 flex-1 text-left cursor-pointer"
               >
-                <span className="w-6 text-[14px] font-bold text-[#86868b] tabular-nums shrink-0">
+                <span
+                  className={`w-7 h-7 rounded-full border text-[12px] font-bold flex items-center justify-center tabular-nums shrink-0 ${badgeCls}`}
+                >
                   {idx + 1}
                 </span>
                 <div className="min-w-0">
@@ -169,7 +195,7 @@ export function LeaderboardTab({
                 </button>
                 <button
                   type="button"
-                  onClick={() => openFriendDetail(entry.userId)}
+                  onClick={() => handleSelectMember(entry)}
                   aria-label={`View ${entry.name}`}
                   className="p-1 text-[#525257] hover:text-white cursor-pointer"
                 >
@@ -180,7 +206,7 @@ export function LeaderboardTab({
           );
         })}
 
-        {/* Unranked / Calibrating Friends (FR-38: shown as Calibrating and NOT given a rank) */}
+        {/* Unranked / Calibrating Friends */}
         {unranked.map((entry) => {
           const score = period === "today" ? entry.todayScore : entry.monthEffort;
           const isCalibrating =
@@ -202,10 +228,12 @@ export function LeaderboardTab({
             >
               <button
                 type="button"
-                onClick={() => openFriendDetail(entry.userId)}
+                onClick={() => handleSelectMember(entry)}
                 className="flex items-center gap-3 min-w-0 flex-1 text-left cursor-pointer"
               >
-                <span className="w-6 text-[13px] font-medium text-[#525257] shrink-0">—</span>
+                <span className="w-7 text-center text-[13px] font-medium text-[#525257] shrink-0">
+                  —
+                </span>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="text-[15px] font-medium text-[#d1d1d6] truncate">
@@ -250,7 +278,7 @@ export function LeaderboardTab({
                 </button>
                 <button
                   type="button"
-                  onClick={() => openFriendDetail(entry.userId)}
+                  onClick={() => handleSelectMember(entry)}
                   aria-label={`View ${entry.name}`}
                   className="p-1 text-[#525257] hover:text-white cursor-pointer"
                 >

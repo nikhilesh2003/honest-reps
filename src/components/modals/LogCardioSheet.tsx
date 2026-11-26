@@ -1,13 +1,19 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Camera, Sparkles, Check, Calendar, AlertTriangle } from "lucide-react";
 import { BottomSheet } from "../ui/BottomSheet";
 import { triggerHaptic } from "@/lib/haptics";
 import { AppStatePayload } from "@/lib/client-types";
 import { apiLogCardio, apiParseCardio, apiUpdateCardioLog } from "@/lib/client-engine";
 import { CardioLog, ParsedCardioDraft } from "@/lib/types";
-import { addDaysIso, daysBetweenIso, formatShortMonthDay } from "@/lib/effort";
+import {
+  addDaysIso,
+  convertDistanceToKm,
+  convertKmToDisplayDistance,
+  daysBetweenIso,
+  formatShortMonthDay,
+} from "@/lib/effort";
 
 interface LogCardioSheetProps {
   open: boolean;
@@ -16,6 +22,57 @@ interface LogCardioSheetProps {
   initialBackfill?: boolean;
   editingLog?: CardioLog | null;
   onSaved: (message: string) => void;
+}
+
+const DEFAULT_CARDIO_PRESETS = [
+  "Indoor Walk",
+  "Incline Walk",
+  "Treadmill Run",
+  "Cycling",
+  "Stairmaster",
+  "Rowing",
+];
+
+async function compressImageFile(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Read error"));
+    reader.onload = () => {
+      const dataUrl = String(reader.result);
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const maxDim = 1280;
+          let w = img.width;
+          let h = img.height;
+          if (w > maxDim || h > maxDim) {
+            if (w >= h) {
+              h = Math.round((h * maxDim) / w);
+              w = maxDim;
+            } else {
+              w = Math.round((w * maxDim) / h);
+              h = maxDim;
+            }
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            resolve(dataUrl);
+            return;
+          }
+          ctx.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL("image/jpeg", 0.82));
+        } catch {
+          resolve(dataUrl);
+        }
+      };
+      img.onerror = () => resolve(dataUrl);
+      img.src = dataUrl;
+    };
+    reader.readAsDataURL(file);
+  });
 }
 
 export function LogCardioSheet({
@@ -35,10 +92,9 @@ export function LogCardioSheet({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Editable confirmation fields (FR-15)
   const [activityType, setActivityType] = useState("Indoor Walk");
   const [minutes, setMinutes] = useState("");
-  const [distanceKm, setDistanceKm] = useState("");
+  const [distanceInput, setDistanceInput] = useState("");
   const [avgHeartRate, setAvgHeartRate] = useState("");
   const [kcal, setKcal] = useState("");
   const [kcalIsEstimated, setKcalIsEstimated] = useState(false);
@@ -46,6 +102,26 @@ export function LogCardioSheet({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const wasOpenRef = useRef(false);
+
+  const weightUnit = state.profile.weightUnit;
+  const distUnit = weightUnit === "lb" ? "mi" : "km";
+
+  const quickPresets = useMemo(() => {
+    const recentTypes: string[] = [];
+    for (const c of state.recentCardioLogs) {
+      const clean = c.activityType.trim();
+      if (clean && !recentTypes.some((r) => r.toLowerCase() === clean.toLowerCase())) {
+        recentTypes.push(clean);
+      }
+      if (recentTypes.length >= 4) break;
+    }
+    for (const def of DEFAULT_CARDIO_PRESETS) {
+      if (!recentTypes.some((r) => r.toLowerCase() === def.toLowerCase())) {
+        recentTypes.push(def);
+      }
+    }
+    return recentTypes.slice(0, 6);
+  }, [state.recentCardioLogs]);
 
   const selectedDate = addDaysIso(state.realTodayIso, dateOffset);
   const isIndoorWalk =
@@ -85,8 +161,14 @@ export function LogCardioSheet({
       });
       setActivityType(editingLog.activityType);
       setMinutes(String(editingLog.minutes));
-      setDistanceKm(editingLog.distanceKm !== undefined ? String(editingLog.distanceKm) : "");
-      setAvgHeartRate(editingLog.avgHeartRate !== undefined ? String(editingLog.avgHeartRate) : "");
+      setDistanceInput(
+        editingLog.distanceKm !== undefined
+          ? String(convertKmToDisplayDistance(editingLog.distanceKm, weightUnit))
+          : ""
+      );
+      setAvgHeartRate(
+        editingLog.avgHeartRate !== undefined ? String(editingLog.avgHeartRate) : ""
+      );
       setKcal(String(editingLog.kcal));
       setKcalIsEstimated(editingLog.kcalIsEstimated);
       setSource(editingLog.source);
@@ -95,22 +177,80 @@ export function LogCardioSheet({
 
     setDraft(null);
     setDateOffset(initialBackfill ? -1 : 0);
-  }, [open, initialBackfill, editingLog]);
+  }, [open, initialBackfill, editingLog, state.realTodayIso, state.appSettings.backfillWindowDays, weightUnit]);
+
+  const processSelectedFile = async (file: File) => {
+    try {
+      const compressed = await compressImageFile(file);
+      setImagePreview(compressed);
+      setImageMeta({ mimeType: "image/jpeg", fileName: file.name || "screenshot.jpg" });
+    } catch {
+      // Ignore read failure
+    }
+  };
 
   const handleImagePick = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      setImagePreview(String(reader.result));
-      setImageMeta({ mimeType: file.type || "image/png", fileName: file.name });
-    };
-    reader.readAsDataURL(file);
+    void processSelectedFile(file);
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.startsWith("image/")) {
+        const file = item.getAsFile();
+        if (file) {
+          e.preventDefault();
+          void processSelectedFile(file);
+          return;
+        }
+      }
+    }
+  };
+
+  const openPresetForm = (presetActivity: string) => {
+    triggerHaptic("selection");
+    const lastMatch = state.recentCardioLogs.find(
+      (c) => c.activityType.trim().toLowerCase() === presetActivity.trim().toLowerCase()
+    );
+    const defaultMins = lastMatch ? String(lastMatch.minutes) : "20";
+    const defaultDist =
+      lastMatch?.distanceKm !== undefined
+        ? String(convertKmToDisplayDistance(lastMatch.distanceKm, weightUnit))
+        : "";
+
+    setDraft({
+      activityType: presetActivity,
+      distanceKm: lastMatch?.distanceKm ?? null,
+      minutes: Number(defaultMins),
+      avgHeartRate: null,
+      kcal: null,
+      kcalIsEstimated: true,
+      missingMinutes: false,
+      source: "manual",
+      providerUsed: "manual",
+    });
+    setActivityType(presetActivity);
+    setMinutes(defaultMins);
+    setDistanceInput(defaultDist);
+    setAvgHeartRate("");
+    setKcal("");
+    setKcalIsEstimated(true);
+    setSource("manual");
+  };
+
+  const openManualForm = () => {
+    openPresetForm("Indoor Walk");
+    setMinutes("");
+    setDistanceInput("");
   };
 
   const handleParse = async () => {
     if (!freeText.trim() && !imagePreview) {
-      setError("Type cardio details or upload a screenshot.");
+      setError("Type cardio details, tap a quick activity above, or upload a screenshot.");
       return;
     }
     setParsing(true);
@@ -130,7 +270,11 @@ export function LogCardioSheet({
       setDraft(d);
       setActivityType(d.activityType);
       setMinutes(d.minutes !== null ? String(d.minutes) : "");
-      setDistanceKm(d.distanceKm !== null ? String(d.distanceKm) : "");
+      setDistanceInput(
+        d.distanceKm !== null
+          ? String(convertKmToDisplayDistance(d.distanceKm, weightUnit))
+          : ""
+      );
       setAvgHeartRate(d.avgHeartRate !== null ? String(d.avgHeartRate) : "");
       setKcal(d.kcal !== null ? String(d.kcal) : "");
       setKcalIsEstimated(d.kcalIsEstimated);
@@ -141,27 +285,6 @@ export function LogCardioSheet({
     } finally {
       setParsing(false);
     }
-  };
-
-  const openManualForm = () => {
-    setDraft({
-      activityType: "Indoor Walk",
-      distanceKm: null,
-      minutes: null,
-      avgHeartRate: null,
-      kcal: null,
-      kcalIsEstimated: true,
-      missingMinutes: true,
-      source: "manual",
-      providerUsed: "manual",
-    });
-    setActivityType("Indoor Walk");
-    setMinutes("");
-    setDistanceKm("");
-    setAvgHeartRate("");
-    setKcal("");
-    setKcalIsEstimated(true);
-    setSource("manual");
   };
 
   const handleConfirmSave = async () => {
@@ -175,13 +298,18 @@ export function LogCardioSheet({
     setSaving(true);
     setError(null);
     try {
+      const resolvedDistanceKm =
+        distanceInput && Number(distanceInput) > 0
+          ? convertDistanceToKm(Number(distanceInput), weightUnit)
+          : undefined;
+
       if (editingLog) {
         const targetDate = addDaysIso(state.realTodayIso, dateOffset);
         const data = await apiUpdateCardioLog(editingLog.id, {
           date: targetDate,
           activityType,
           minutes: minsNum,
-          distanceKm: distanceKm ? Number(distanceKm) : undefined,
+          distanceKm: resolvedDistanceKm,
           avgHeartRate: avgHeartRate ? Number(avgHeartRate) : undefined,
           kcal: kcal ? Number(kcal) : undefined,
           kcalIsEstimated: kcal ? kcalIsEstimated : true,
@@ -200,7 +328,7 @@ export function LogCardioSheet({
         date: targetDate,
         activityType,
         minutes: minsNum,
-        distanceKm: distanceKm ? Number(distanceKm) : undefined,
+        distanceKm: resolvedDistanceKm,
         avgHeartRate: avgHeartRate ? Number(avgHeartRate) : undefined,
         kcal: kcal ? Number(kcal) : undefined,
         kcalIsEstimated: kcal ? kcalIsEstimated : true,
@@ -241,7 +369,10 @@ export function LogCardioSheet({
       const off = -(idx + 1);
       return {
         offset: off,
-        label: off === -1 ? "Yesterday" : formatShortMonthDay(addDaysIso(state.realTodayIso, off)),
+        label:
+          off === -1
+            ? "Yesterday"
+            : formatShortMonthDay(addDaysIso(state.realTodayIso, off)),
       };
     }),
   ];
@@ -256,11 +387,11 @@ export function LogCardioSheet({
           ? editingLog.date
           : state.todaySession?.isRest && dateOffset === 0
           ? "Logged as Rest day activity"
-          : "Type freely or upload a screenshot"
+          : "1-tap preset, free text, or screenshot"
       }
     >
-      <div className="space-y-4">
-        {/* Date Selector (editable in both Log and Edit modes) */}
+      <div className="space-y-4" onPaste={handlePaste}>
+        {/* Date Selector */}
         <div className="flex items-center gap-1.5 bg-white/[0.04] p-1 rounded-xl">
           {dateOptions.map((opt) => (
             <button
@@ -279,14 +410,32 @@ export function LogCardioSheet({
           ))}
         </div>
 
-        {/* Step 1: Text / Screenshot Input (FR-12, FR-14) */}
+        {/* Step 1: 1-Tap Presets + Text / Screenshot Input */}
         {!draft && (
           <div className="space-y-3">
+            <div>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b] mb-1.5">
+                Quick Select
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {quickPresets.map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => openPresetForm(preset)}
+                    className="px-3 py-1.5 rounded-full bg-white/[0.04] hover:bg-[#10e760]/15 border border-white/[0.08] hover:border-[#10e760]/50 text-[12px] font-medium text-[#f5f5f7] transition-colors cursor-pointer"
+                  >
+                    {preset}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <textarea
               rows={3}
               value={freeText}
               onChange={(e) => setFreeText(e.target.value)}
-              placeholder='e.g. "indoor walk 1.5 km, 25 min, 118 bpm"'
+              placeholder={`e.g. "indoor walk 1.5 ${distUnit}, 25 min, 118 bpm" (or paste screenshot)`}
               className="w-full p-3.5 rounded-2xl bg-black border border-white/12 text-white text-[14px] placeholder:text-[#525257] focus:outline-none focus:border-[#10e760] resize-none"
             />
 
@@ -350,7 +499,7 @@ export function LogCardioSheet({
           </div>
         )}
 
-        {/* Step 2: Mandatory Confirmation Card (FR-15, FR-16, FR-21) */}
+        {/* Step 2: Mandatory Confirmation Card */}
         {draft && (
           <div className="space-y-3.5">
             <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-[#10e760]/30 space-y-3">
@@ -358,13 +507,37 @@ export function LogCardioSheet({
                 <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#10e760]">
                   Confirm Details
                 </span>
-                <button
-                  type="button"
-                  onClick={() => setDraft(null)}
-                  className="text-[12px] text-[#86868b] hover:text-white cursor-pointer"
-                >
-                  Edit input
-                </button>
+                {!editingLog && (
+                  <button
+                    type="button"
+                    onClick={() => setDraft(null)}
+                    className="text-[12px] text-[#86868b] hover:text-white cursor-pointer"
+                  >
+                    Back
+                  </button>
+                )}
+              </div>
+
+              {/* Quick Activity Switcher Pills */}
+              <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+                {quickPresets.map((preset) => {
+                  const active =
+                    activityType.trim().toLowerCase() === preset.toLowerCase();
+                  return (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setActivityType(preset)}
+                      className={`shrink-0 px-2.5 py-1 rounded-full text-[11px] font-medium border cursor-pointer ${
+                        active
+                          ? "bg-[#10e760] text-black border-[#10e760] font-semibold"
+                          : "bg-black/40 text-[#86868b] border-white/[0.08] hover:text-white"
+                      }`}
+                    >
+                      {preset}
+                    </button>
+                  );
+                })}
               </div>
 
               {draft.confidenceNote && (
@@ -378,11 +551,13 @@ export function LogCardioSheet({
                       Split #{existingWalksOnDate.length + 1}
                     </span>
                     <span className="text-[#86868b] text-[11px] tabular-nums">
-                      {existingWalksOnDate.length} logged previously ({existingWalksOnDate.reduce((a, b) => a + b.minutes, 0)}m total)
+                      {existingWalksOnDate.length} logged previously (
+                      {existingWalksOnDate.reduce((a, b) => a + b.minutes, 0)}m total)
                     </span>
                   </div>
                   <div className="text-[11px] text-[#86868b] leading-tight">
-                    This walk will be saved as <strong>Split {existingWalksOnDate.length + 1}</strong> and grouped under your day&apos;s Indoor Walk.
+                    This walk will be saved as{" "}
+                    <strong>Split {existingWalksOnDate.length + 1}</strong> and grouped under your day&apos;s Indoor Walk.
                   </div>
                 </div>
               )}
@@ -411,23 +586,27 @@ export function LogCardioSheet({
                   </label>
                   <input
                     type="number"
+                    inputMode="numeric"
                     value={minutes}
                     onChange={(e) => setMinutes(e.target.value)}
                     placeholder="20"
                     className={`w-full h-10 px-3 rounded-xl bg-black border text-white text-[14px] tabular-nums focus:outline-none ${
-                      !minutes ? "border-amber-500/60" : "border-white/12 focus:border-[#10e760]"
+                      !minutes
+                        ? "border-amber-500/60"
+                        : "border-white/12 focus:border-[#10e760]"
                     }`}
                   />
                 </div>
                 <div>
                   <label className="block text-[11px] text-[#86868b] mb-1">
-                    Distance (km)
+                    Distance ({distUnit})
                   </label>
                   <input
                     type="number"
+                    inputMode="decimal"
                     step="0.1"
-                    value={distanceKm}
-                    onChange={(e) => setDistanceKm(e.target.value)}
+                    value={distanceInput}
+                    onChange={(e) => setDistanceInput(e.target.value)}
                     placeholder="Optional"
                     className="w-full h-10 px-3 rounded-xl bg-black border border-white/12 text-white text-[14px] tabular-nums focus:outline-none focus:border-[#10e760]"
                   />
@@ -441,6 +620,7 @@ export function LogCardioSheet({
                   </label>
                   <input
                     type="number"
+                    inputMode="numeric"
                     value={avgHeartRate}
                     onChange={(e) => setAvgHeartRate(e.target.value)}
                     placeholder="Optional"
@@ -458,6 +638,7 @@ export function LogCardioSheet({
                   </div>
                   <input
                     type="number"
+                    inputMode="numeric"
                     value={kcal}
                     onChange={(e) => {
                       setKcal(e.target.value);

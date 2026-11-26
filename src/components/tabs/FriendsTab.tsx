@@ -15,6 +15,7 @@ import {
   ArrowLeft,
   Lock,
   Unlock,
+  Zap,
 } from "lucide-react";
 import {
   AppStatePayload,
@@ -32,9 +33,11 @@ import {
   apiGetMemberPreview,
   apiRemoveFriend,
   apiSearchMembers,
+  apiSendFriendNudge,
   apiSendFriendRequest,
   apiSyncFriendsNow,
 } from "@/lib/client-engine";
+import { triggerHaptic } from "@/lib/haptics";
 import { buildLeaderboardScoreReason, ScoreReasonData } from "@/lib/score-reason";
 import { BottomSheet } from "../ui/BottomSheet";
 import { ScoreReasonSheet } from "../ui/ScoreReasonSheet";
@@ -60,6 +63,7 @@ export function FriendsTab({
   const [searchingMembers, setSearchingMembers] = useState(false);
   const [selectedPreview, setSelectedPreview] = useState<MemberPreviewPayload | null>(null);
   const [loadingPreview, setLoadingPreview] = useState(false);
+  const [nudgedIds, setNudgedIds] = useState<Set<string>>(new Set());
 
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -178,12 +182,37 @@ export function FriendsTab({
 
   const handleRequestAction = async (
     friendshipId: string,
-    action: "accept" | "decline"
+    action: "accept" | "decline" | "remove"
   ) => {
     const res = await apiFriendAction(friendshipId, action);
     if (res.ok) {
-      onToast(action === "accept" ? "Friend added" : "Request declined");
+      onToast(
+        action === "accept"
+          ? "Friend added"
+          : action === "remove"
+          ? "Sent request cancelled"
+          : "Request declined"
+      );
       onRefresh();
+    }
+  };
+
+  const handleFistBump = async (
+    friendUserId: string,
+    friendUsername: string,
+    inGym?: boolean
+  ) => {
+    triggerHaptic("medium");
+    const res = await apiSendFriendNudge(
+      friendUserId,
+      friendUsername,
+      inGym ? "spot" : "fistbump"
+    );
+    if (res.ok) {
+      setNudgedIds((prev) => new Set(prev).add(friendUserId));
+      onToast(`Sent fist bump to @${friendUsername}`);
+    } else {
+      onToast(res.error || "Already bumped recently", "error");
     }
   };
 
@@ -231,7 +260,7 @@ export function FriendsTab({
         </div>
       </div>
 
-      {/* Pending Incoming Requests (FR-35) */}
+      {/* Pending Incoming Requests */}
       {state.incomingRequests.length > 0 && (
         <div className="apple-card p-4 space-y-2.5">
           <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
@@ -269,7 +298,7 @@ export function FriendsTab({
         </div>
       )}
 
-      {/* Pending Outgoing Requests */}
+      {/* Pending Outgoing Requests with Cancel Option */}
       {state.outgoingRequests.length > 0 && (
         <div className="apple-card p-4 space-y-2">
           <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
@@ -278,18 +307,24 @@ export function FriendsTab({
           {state.outgoingRequests.map((req) => (
             <div
               key={req.friendshipId}
-              className="flex items-center justify-between text-[13px]"
+              className="flex items-center justify-between gap-2 text-[13px] py-0.5"
             >
-              <span className="text-[#d1d1d6]">
+              <span className="text-[#d1d1d6] truncate">
                 {req.name} <span className="text-[#525257]">@{req.username}</span>
               </span>
-              <span className="text-[11px] text-[#86868b]">Pending</span>
+              <button
+                type="button"
+                onClick={() => handleRequestAction(req.friendshipId, "remove")}
+                className="px-2.5 py-1 rounded-full bg-white/[0.06] hover:bg-red-500/20 text-[11px] text-[#86868b] hover:text-red-300 font-medium transition-colors cursor-pointer shrink-0"
+              >
+                Cancel
+              </button>
             </div>
           ))}
         </div>
       )}
 
-      {/* Connected Friends List (Live Gym Status + Heatmap + Clickable Scores) */}
+      {/* Connected Friends List */}
       {friendsList.length === 0 ? (
         <div className="apple-card p-6 text-center space-y-3">
           <div className="text-[15px] font-semibold text-white">No friends connected yet</div>
@@ -313,11 +348,13 @@ export function FriendsTab({
               period === "today"
                 ? entry.todayStatus === "Calibrating"
                 : entry.isMonthCalibrating;
+            const bumped = nudgedIds.has(entry.userId);
+            const canBump = Boolean(entry.inGym || entry.todayScore !== null);
 
             return (
               <div
                 key={entry.userId}
-                className="p-4 flex items-center justify-between gap-3 hover:bg-white/[0.02] transition-colors"
+                className="p-4 flex items-center justify-between gap-2.5 hover:bg-white/[0.02] transition-colors"
               >
                 <button
                   type="button"
@@ -360,12 +397,48 @@ export function FriendsTab({
                 </button>
 
                 <div className="flex items-center gap-1.5 shrink-0">
+                  {canBump && (
+                    <button
+                      type="button"
+                      disabled={bumped}
+                      onClick={() =>
+                        handleFistBump(entry.userId, entry.username, entry.inGym)
+                      }
+                      title={
+                        bumped
+                          ? "Bump sent"
+                          : entry.inGym
+                          ? "Send live gym salute"
+                          : "Send fist bump for today's workout"
+                      }
+                      className={`h-7 px-2 rounded-full text-[10px] font-semibold flex items-center gap-1 border transition-colors cursor-pointer ${
+                        bumped
+                          ? "bg-[#10e760]/12 border-[#10e760]/30 text-[#10e760]"
+                          : "bg-white/[0.05] hover:bg-[#10e760]/15 border-white/[0.08] hover:border-[#10e760]/40 text-[#d1d1d6] hover:text-[#10e760]"
+                      }`}
+                    >
+                      {bumped ? (
+                        <>
+                          <Check className="w-3 h-3" />
+                          Sent
+                        </>
+                      ) : (
+                        <>
+                          <Zap className="w-3 h-3 text-[#10e760]" />
+                          Bump
+                        </>
+                      )}
+                    </button>
+                  )}
+
                   {score !== null ? (
                     <button
                       type="button"
-                      onClick={() => setScoreReason(buildLeaderboardScoreReason(entry, period))}
+                      onClick={() =>
+                        setScoreReason(buildLeaderboardScoreReason(entry, period))
+                      }
                       title="Tap score to see why"
-                      className="px-2.5 py-1 rounded-xl hover:bg-white/[0.07] active:scale-95 transition-all text-right cursor-pointer"
+                      className="px-2 py-1 rounded-xl hover:bg-white/[0.07] active:scale-95 transition-all text-right cursor-pointer"
                     >
                       <span
                         className={`text-[18px] font-bold tabular-nums ${
@@ -378,7 +451,9 @@ export function FriendsTab({
                   ) : (
                     <button
                       type="button"
-                      onClick={() => setScoreReason(buildLeaderboardScoreReason(entry, period))}
+                      onClick={() =>
+                        setScoreReason(buildLeaderboardScoreReason(entry, period))
+                      }
                       className="px-2 py-1 rounded-full text-[10px] font-medium bg-white/[0.05] text-[#86868b] border border-white/[0.08] cursor-pointer"
                     >
                       {entry.todayStatus === "Rest" ? "Rest" : "—"}
@@ -399,7 +474,7 @@ export function FriendsTab({
         </div>
       )}
 
-      {/* Add Friend Sheet (FR-35) */}
+      {/* Add Friend Sheet */}
       <BottomSheet
         open={addOpen}
         onClose={() => setAddOpen(false)}

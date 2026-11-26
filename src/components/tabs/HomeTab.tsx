@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Plus,
   Zap,
@@ -13,10 +13,18 @@ import {
   Bell,
   X,
   Dumbbell,
+  Check,
+  Pencil,
 } from "lucide-react";
 import { AppStatePayload } from "@/lib/client-types";
-import { DaySummary, EffortBand } from "@/lib/types";
-import { formatFullDate, formatLogTime } from "@/lib/effort";
+import { CardioLog, DaySummary, EffortBand, ExerciseLog } from "@/lib/types";
+import {
+  formatDistance,
+  formatFullDate,
+  formatLogTime,
+  getCalibrationProgress,
+  getSuggestedRoutineExercises,
+} from "@/lib/effort";
 import {
   buildDayScoreReason,
   buildLeaderboardScoreReason,
@@ -36,6 +44,8 @@ interface HomeTabProps {
   onOpenCheckin: () => void;
   onOpenStrength: (exerciseName?: string) => void;
   onOpenCardio: () => void;
+  onEditStrength: (log: ExerciseLog) => void;
+  onEditCardio: (log: CardioLog) => void;
   onNavigateTab: (tab: "logs" | "friends" | "leaderboard" | "analytics" | "profile") => void;
 }
 
@@ -100,6 +110,8 @@ export function HomeTab({
   onOpenCheckin,
   onOpenStrength,
   onOpenCardio,
+  onEditStrength,
+  onEditCardio,
   onNavigateTab,
 }: HomeTabProps) {
   const { profile, todaySummary, previousScoredDay, rolling7Days, monthStats, todaySession } = state;
@@ -129,14 +141,38 @@ export function HomeTab({
   const delta = todayScore !== null ? todayScore - prevScore : null;
   const firstName = profile.name.split(" ")[0] || profile.name;
 
-  // Top 6 exercise pills matching today's Session for instant 2-tap logging (FR-10, NFR-4)
-  const sessionGroups =
-    todaySession && !todaySession.isRest ? todaySession.muscleGroups : [];
+  const sessionGroups = useMemo(
+    () => (todaySession && !todaySession.isRest ? todaySession.muscleGroups : []),
+    [todaySession]
+  );
+
+  // Repeat Last Session lineup (when Today's Session focus matches a prior workout)
+  const suggestedRoutine = useMemo(
+    () =>
+      getSuggestedRoutineExercises(
+        sessionGroups,
+        state.recentExerciseLogs,
+        state.visibleExercises,
+        state.todayIso
+      ),
+    [sessionGroups, state.recentExerciseLogs, state.visibleExercises, state.todayIso]
+  );
+
+  const loggedTodayNames = useMemo(
+    () =>
+      new Set(
+        todaySummary.loggedItems
+          .filter((i) => i.kind === "strength")
+          .map((i) => i.title.trim().toLowerCase())
+      ),
+    [todaySummary.loggedItems]
+  );
+
   const quickPills = (
     sessionGroups.length > 0
       ? state.visibleExercises.filter((e) => sessionGroups.includes(e.muscleGroup))
       : state.visibleExercises
-  ).slice(0, 6);
+  ).slice(0, 8);
 
   const sessionLabel = todaySession
     ? todaySession.isRest
@@ -149,7 +185,6 @@ export function HomeTab({
     .sort((a, b) => (b.monthEffort ?? 0) - (a.monthEffort ?? 0))
     .slice(0, 3);
 
-  // Match latest admin notification targeted to this user
   const dismissedSet = new Set(dismissedAnnIds);
   const matchingAnns = state.announcements.filter((a) => {
     const t = (a.target || "all").trim().toLowerCase();
@@ -171,6 +206,19 @@ export function HomeTab({
   const latestAnn = matchingAnns.find((a) => !dismissedSet.has(a.id));
 
   const elapsedLabel = inGym ? formatGymElapsed(gymStartedAt, nowMs) : "";
+
+  const handleEditTodayItem = (item: DaySummary["loggedItems"][number]) => {
+    if (item.kind === "strength") {
+      const found = state.recentExerciseLogs.find((e) => e.id === item.id);
+      if (found) onEditStrength(found);
+    } else {
+      const targetId = item.splits?.length
+        ? item.splits[item.splits.length - 1].id
+        : item.id;
+      const found = state.recentCardioLogs.find((c) => c.id === targetId);
+      if (found) onEditCardio(found);
+    }
+  };
 
   return (
     <div className="space-y-4 pb-6">
@@ -231,7 +279,6 @@ export function HomeTab({
 
       {/* 2-Card Row: Left = In the Gym Live Toggle, Right = Today's Session */}
       <div className="grid grid-cols-2 gap-3 items-stretch">
-        {/* Left Card: In the Gym ON/OFF with Glow Backdrop */}
         <div className="relative flex">
           {inGym && (
             <div
@@ -281,13 +328,13 @@ export function HomeTab({
                 )}
               </div>
               <div className="text-[11px] text-[#86868b] tabular-nums mt-0.5 truncate">
-                {inGym ? `Live ${elapsedLabel || "0m"} · Auto-off 2h` : "Tap when at gym"}
+                {inGym ? `Live ${elapsedLabel || "0m"} · Screen awake` : "Tap when at gym"}
               </div>
             </div>
           </button>
         </div>
 
-        {/* Right Card: Today's Session Focus (FR-6–FR-8) */}
+        {/* Right Card: Today's Session Focus */}
         <button
           type="button"
           onClick={onOpenCheckin}
@@ -324,7 +371,7 @@ export function HomeTab({
         </button>
       </div>
 
-      {/* HERO EFFORT CARD + 7-DAY ROLLING SLIDING BARS (Reason hidden; tap score number for popup) */}
+      {/* HERO EFFORT CARD + 7-DAY ROLLING SLIDING BARS */}
       <div className="apple-card p-5 space-y-5">
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -403,7 +450,7 @@ export function HomeTab({
           </div>
         </div>
 
-        {/* 7-Day Rolling Sliding Bars (Older left -> Today ALWAYS far right) */}
+        {/* 7-Day Rolling Sliding Bars */}
         <div className="pt-1">
           <div className="flex items-center justify-between mb-3">
             <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
@@ -414,7 +461,7 @@ export function HomeTab({
                 type="button"
                 onClick={() => onChangeDayShift(dayShift - 1)}
                 aria-label="Previous day"
-                className="w-6 h-6 rounded-full bg-white/[0.05] hover:bg-white/[0.12] flex items-center justify-center text-[#86868b] hover:text-white cursor-pointer"
+                className="w-7 h-7 rounded-full bg-white/[0.05] hover:bg-white/[0.12] flex items-center justify-center text-[#86868b] hover:text-white cursor-pointer"
               >
                 <ChevronLeft className="w-3.5 h-3.5" />
               </button>
@@ -423,7 +470,7 @@ export function HomeTab({
                   type="button"
                   onClick={() => onChangeDayShift(0)}
                   aria-label="Back to today"
-                  className="px-2 h-6 rounded-full bg-white/[0.06] hover:bg-white/[0.12] text-[10px] font-medium text-[#10e760] flex items-center gap-1 cursor-pointer"
+                  className="px-2.5 h-7 rounded-full bg-white/[0.06] hover:bg-white/[0.12] text-[10px] font-medium text-[#10e760] flex items-center gap-1 cursor-pointer"
                 >
                   <RotateCcw className="w-2.5 h-2.5" />
                   Today
@@ -434,7 +481,7 @@ export function HomeTab({
                 onClick={() => onChangeDayShift(Math.min(0, dayShift + 1))}
                 disabled={dayShift >= 0}
                 aria-label="Next day"
-                className="w-6 h-6 rounded-full bg-white/[0.05] hover:bg-white/[0.12] disabled:opacity-25 flex items-center justify-center text-[#86868b] hover:text-white cursor-pointer"
+                className="w-7 h-7 rounded-full bg-white/[0.05] hover:bg-white/[0.12] disabled:opacity-25 flex items-center justify-center text-[#86868b] hover:text-white cursor-pointer"
               >
                 <ChevronRight className="w-3.5 h-3.5" />
               </button>
@@ -486,7 +533,9 @@ export function HomeTab({
                         }
                       }}
                       className={`w-full h-[88px] rounded-[12px] p-[2px] flex flex-col justify-end overflow-hidden transition-all ${
-                        canInspect ? "cursor-pointer hover:brightness-110 active:scale-95" : "cursor-default"
+                        canInspect
+                          ? "cursor-pointer hover:brightness-110 active:scale-95"
+                          : "cursor-default"
                       } ${
                         isToday
                           ? "bg-[#050506] border border-[#10e760]/60 shadow-[0_0_14px_rgba(16,231,96,0.16)]"
@@ -578,7 +627,7 @@ export function HomeTab({
         </div>
       </div>
 
-      {/* QUICK ACTIONS RIGHT ON HOME SCREEN (Log Strength & Log Cardio) */}
+      {/* QUICK ACTIONS RIGHT ON HOME SCREEN */}
       <div className="grid grid-cols-2 gap-3">
         <button
           type="button"
@@ -591,7 +640,7 @@ export function HomeTab({
           <div className="text-[15px] font-semibold text-white tracking-[-0.01em]">
             Log Strength
           </div>
-          <div className="text-[12px] text-[#86868b] mt-0.5">Sets & reps</div>
+          <div className="text-[12px] text-[#86868b] mt-0.5">Sets, reps &amp; rest timer</div>
         </button>
 
         <button
@@ -605,9 +654,44 @@ export function HomeTab({
           <div className="text-[15px] font-semibold text-white tracking-[-0.01em]">
             Log Cardio
           </div>
-          <div className="text-[12px] text-[#86868b] mt-0.5">Text or photo</div>
+          <div className="text-[12px] text-[#86868b] mt-0.5">Preset, text or photo</div>
         </button>
       </div>
+
+      {/* Repeat Last Session Lineup (when session focus matches a prior workout) */}
+      {!todaySession?.isRest && suggestedRoutine.length > 0 && (
+        <div className="apple-card p-3.5 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
+              Last {sessionLabel} Lineup
+            </span>
+            <span className="text-[11px] text-[#10e760] tabular-nums font-medium">
+              {suggestedRoutine.filter((n) => loggedTodayNames.has(n.toLowerCase())).length}/
+              {suggestedRoutine.length} done
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {suggestedRoutine.map((exName) => {
+              const done = loggedTodayNames.has(exName.toLowerCase());
+              return (
+                <button
+                  key={exName}
+                  type="button"
+                  onClick={() => onOpenStrength(exName)}
+                  className={`px-3 py-1.5 rounded-full text-[12px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer border ${
+                    done
+                      ? "bg-[#10e760]/12 border-[#10e760]/40 text-[#10e760]"
+                      : "bg-white/[0.04] border-white/[0.08] text-[#f5f5f7] hover:border-[#10e760]/50"
+                  }`}
+                >
+                  {done && <Check className="w-3 h-3 stroke-[2.5]" />}
+                  <span>{exName}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Quick Exercise Pills (FR-10) */}
       {!todaySession?.isRest && quickPills.length > 0 && (
@@ -630,7 +714,7 @@ export function HomeTab({
         </div>
       )}
 
-      {/* Today's Session Items */}
+      {/* Today's Session Items (Tap row to Edit · Tap score to view breakdown) */}
       <div className="apple-card p-4">
         <div className="flex items-center justify-between mb-3">
           <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
@@ -652,80 +736,106 @@ export function HomeTab({
           </div>
         ) : (
           <div className="divide-y divide-white/[0.06]">
-            {todaySummary.loggedItems.map((item) => (
-              <div
-                key={item.id}
-                className="py-3 first:pt-0 last:pb-0 flex items-center justify-between gap-3"
-              >
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[14px] font-medium text-white truncate">
-                      {item.title}
-                    </span>
-                    {item.kcalIsEstimated && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.07] text-[#a1a1a6]">
-                        Estimated
-                      </span>
-                    )}
-                    {item.addedLater && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.07] text-[#a1a1a6]">
-                        Added later
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-[12px] text-[#86868b] mt-0.5 tabular-nums truncate">
-                    {item.detail}
-                    {formatLogTime(item.createdAt) ? ` · ${formatLogTime(item.createdAt)}` : ""}
-                  </div>
-                  {item.splits && item.splits.length > 1 && (
-                    <div className="mt-1.5 pl-2 border-l border-white/15 space-y-0.5">
-                      {item.splits.map((s) => (
-                        <div
-                          key={s.id}
-                          className="flex items-center flex-wrap gap-x-1.5 gap-y-0.5 text-[11px] text-[#86868b] tabular-nums leading-tight"
-                        >
-                          <span className="font-semibold text-white/90 whitespace-nowrap shrink-0">
-                            Split {s.splitNumber}:
-                          </span>
-                          <span className="whitespace-nowrap">{s.minutes}m</span>
-                          {s.distanceKm && <span className="whitespace-nowrap">· {s.distanceKm}km</span>}
-                          <span className="whitespace-nowrap">· {s.kcal}kcal</span>
-                          {formatLogTime(s.createdAt) && (
-                            <span className="whitespace-nowrap opacity-75">
-                              · {formatLogTime(s.createdAt)}
-                            </span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setScoreReason(
-                      buildLoggedItemScoreReason(item, {
-                        hidePrivateDetails: false,
-                        shareDetailsEnabled: true,
-                      })
+            {todaySummary.loggedItems.map((item) => {
+              const calInfo =
+                item.status === "Calibrating"
+                  ? getCalibrationProgress(
+                      item.title.replace(/\s*\(\d+\s*Splits.*\)$/i, ""),
+                      item.kind,
+                      item.kind === "strength"
+                        ? state.recentExerciseLogs
+                        : state.recentCardioLogs,
+                      state.todayIso,
+                      item.createdAt
                     )
-                  }
-                  className="shrink-0 px-2 py-1 rounded-lg hover:bg-white/[0.06] active:scale-95 transition-all cursor-pointer"
+                  : null;
+
+              return (
+                <div
+                  key={item.id}
+                  className="py-3 first:pt-0 last:pb-0 flex items-center justify-between gap-3"
                 >
-                  {item.status === "Calibrating" ? (
-                    <span className="text-[11px] font-medium text-amber-400">
-                      Calibrating
-                    </span>
-                  ) : item.status === "Rest" ? (
-                    <span className="text-[11px] font-medium text-[#86868b]">Rest</span>
-                  ) : (
-                    <span className="text-[15px] font-semibold text-[#10e760] tabular-nums">
-                      {item.effortScore}
-                    </span>
-                  )}
-                </button>
-              </div>
-            ))}
+                  <button
+                    type="button"
+                    onClick={() => handleEditTodayItem(item)}
+                    className="min-w-0 flex-1 text-left group cursor-pointer"
+                    title="Tap to edit entry"
+                  >
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[14px] font-medium text-white group-hover:text-[#10e760] transition-colors truncate">
+                        {item.title}
+                      </span>
+                      <Pencil className="w-3 h-3 text-[#525257] opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                      {item.kcalIsEstimated && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.07] text-[#a1a1a6]">
+                          Estimated
+                        </span>
+                      )}
+                      {item.addedLater && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.07] text-[#a1a1a6]">
+                          Added later
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[12px] text-[#86868b] mt-0.5 tabular-nums truncate">
+                      {item.detail}
+                      {formatLogTime(item.createdAt) ? ` · ${formatLogTime(item.createdAt)}` : ""}
+                    </div>
+                    {item.splits && item.splits.length > 1 && (
+                      <div className="mt-1.5 pl-2 border-l border-white/15 space-y-0.5">
+                        {item.splits.map((s) => (
+                          <div
+                            key={s.id}
+                            className="flex items-center flex-wrap gap-x-1.5 gap-y-0.5 text-[11px] text-[#86868b] tabular-nums leading-tight"
+                          >
+                            <span className="font-semibold text-white/90 whitespace-nowrap shrink-0">
+                              Split {s.splitNumber}:
+                            </span>
+                            <span className="whitespace-nowrap">{s.minutes}m</span>
+                            {s.distanceKm && (
+                              <span className="whitespace-nowrap">
+                                · {formatDistance(s.distanceKm, profile.weightUnit)}
+                              </span>
+                            )}
+                            <span className="whitespace-nowrap">· {s.kcal}kcal</span>
+                            {formatLogTime(s.createdAt) && (
+                              <span className="whitespace-nowrap opacity-75">
+                                · {formatLogTime(s.createdAt)}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setScoreReason(
+                        buildLoggedItemScoreReason(item, {
+                          hidePrivateDetails: false,
+                          shareDetailsEnabled: true,
+                        })
+                      )
+                    }
+                    className="shrink-0 px-2 py-1 rounded-lg hover:bg-white/[0.06] active:scale-95 transition-all cursor-pointer"
+                  >
+                    {item.status === "Calibrating" ? (
+                      <span className="text-[11px] font-medium text-amber-400 tabular-nums">
+                        {calInfo ? calInfo.label : "Calibrating"}
+                      </span>
+                    ) : item.status === "Rest" ? (
+                      <span className="text-[11px] font-medium text-[#86868b]">Rest</span>
+                    ) : (
+                      <span className="text-[15px] font-semibold text-[#10e760] tabular-nums">
+                        {item.effortScore}
+                      </span>
+                    )}
+                  </button>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

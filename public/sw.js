@@ -190,12 +190,107 @@ function ensureSwPolling() {
   }, 12000);
 }
 
-self.addEventListener("install", () => {
+const SHELL_CACHE = "honest-reps-shell-v2";
+const PRECACHE_URLS = [
+  "/",
+  "/manifest.json",
+  "/icon-192x192.png",
+  "/favicon-96x96.png",
+  "/icons/logo-icon.png",
+  "/icons/logo-wordmark.png",
+];
+
+self.addEventListener("install", (event) => {
   self.skipWaiting();
+  event.waitUntil(
+    caches
+      .open(SHELL_CACHE)
+      .then((cache) => cache.addAll(PRECACHE_URLS))
+      .catch(() => {})
+  );
 });
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    (async () => {
+      try {
+        const keys = await caches.keys();
+        await Promise.all(
+          keys
+            .filter((k) => k.startsWith("honest-reps-shell-") && k !== SHELL_CACHE)
+            .map((k) => caches.delete(k))
+        );
+      } catch {}
+      await self.clients.claim();
+    })()
+  );
+});
+
+self.addEventListener("fetch", (event) => {
+  const req = event.request;
+  if (req.method !== "GET") return;
+
+  let url;
+  try {
+    url = new URL(req.url);
+  } catch {
+    return;
+  }
+
+  // Never intercept cross-origin APIs (Supabase, OSM, OAuth) or dynamic PHP/version endpoints
+  if (url.origin !== self.location.origin) return;
+  if (
+    url.pathname.startsWith("/api/") ||
+    url.pathname.startsWith("/auth/") ||
+    url.pathname.endsWith("/version.json")
+  ) {
+    return;
+  }
+
+  // Navigation requests: network-first with cached shell fallback for basement/offline gyms
+  if (req.mode === "navigate") {
+    event.respondWith(
+      fetch(req)
+        .then((res) => {
+          if (res && res.ok) {
+            const copy = res.clone();
+            caches.open(SHELL_CACHE).then((c) => c.put(req, copy)).catch(() => {});
+          }
+          return res;
+        })
+        .catch(async () => {
+          const cachedPage = await caches.match(req);
+          if (cachedPage) return cachedPage;
+          const cachedRoot = await caches.match("/");
+          if (cachedRoot) return cachedRoot;
+          throw new Error("Offline");
+        })
+    );
+    return;
+  }
+
+  // Static Next.js chunks, CSS, icons, and manifest: stale-while-revalidate
+  const isStaticAsset =
+    url.pathname.startsWith("/_next/static/") ||
+    url.pathname.startsWith("/icons/") ||
+    /\.(?:png|svg|ico|css|js|woff2?|json)$/i.test(url.pathname);
+
+  if (isStaticAsset) {
+    event.respondWith(
+      caches.match(req).then((cached) => {
+        const networkFetch = fetch(req)
+          .then((res) => {
+            if (res && res.ok) {
+              const copy = res.clone();
+              caches.open(SHELL_CACHE).then((c) => c.put(req, copy)).catch(() => {});
+            }
+            return res;
+          })
+          .catch(() => cached);
+        return cached || networkFetch;
+      })
+    );
+  }
 });
 
 self.addEventListener("push", (event) => {

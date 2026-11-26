@@ -109,6 +109,7 @@ export interface AppStatePayload {
       date: string;
       shortDate: string;
       maxWeightKg: number;
+      best1RMKg: number;
       totalVolume: number;
       totalReps: number;
       effortScore: number | null;

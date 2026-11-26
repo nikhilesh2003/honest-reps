@@ -1,9 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ActiveStatus, HeightUnit, WeightUnit } from "@/lib/types";
 import { apiGetState, apiUpdateProfile } from "@/lib/client-engine";
+import {
+  cmToFeetInches,
+  convertWeightBetweenUnits,
+  feetInchesToCm,
+  validateUsernameInput,
+} from "@/lib/effort";
 
 // Screen 2: Onboarding (FR-2 to FR-4, FR-65)
 export default function OnboardingPage() {
@@ -12,6 +18,8 @@ export default function OnboardingPage() {
   const [username, setUsername] = useState("");
   const [weight, setWeight] = useState("74.5");
   const [heightCm, setHeightCm] = useState("178");
+  const [heightFeet, setHeightFeet] = useState("5");
+  const [heightInches, setHeightInches] = useState("10");
   const [weightUnit, setWeightUnit] = useState<WeightUnit>("kg");
   const [heightUnit, setHeightUnit] = useState<HeightUnit>("cm");
   const [activeStatus, setActiveStatus] = useState<ActiveStatus>("Moderately active");
@@ -37,8 +45,16 @@ export default function OnboardingPage() {
         if (d.profile) {
           setName(d.profile.name || "");
           setUsername(d.profile.username || "");
-          setHeightCm(String(d.profile.heightCm || 175));
-          setWeightUnit(d.profile.weightUnit || "kg");
+          const cm = d.profile.heightCm || 175;
+          setHeightCm(String(cm));
+          const ftIn = cmToFeetInches(cm);
+          setHeightFeet(String(ftIn.feet));
+          setHeightInches(String(ftIn.inches));
+          const wUnit = d.profile.weightUnit || "kg";
+          setWeightUnit(wUnit);
+          if (wUnit === "lb") {
+            setWeight(String(convertWeightBetweenUnits(74.5, "kg", "lb")));
+          }
           setHeightUnit(d.profile.heightUnit || "cm");
           setActiveStatus(d.profile.activeStatus || "Moderately active");
         }
@@ -49,16 +65,49 @@ export default function OnboardingPage() {
       });
   }, [router]);
 
+  const usernameCheck = useMemo(() => validateUsernameInput(username), [username]);
+
+  const handleSwitchWeightUnit = (nextUnit: WeightUnit) => {
+    if (nextUnit === weightUnit) return;
+    const num = Number(weight);
+    if (!Number.isNaN(num) && num > 0) {
+      setWeight(String(convertWeightBetweenUnits(num, weightUnit, nextUnit)));
+    }
+    setWeightUnit(nextUnit);
+  };
+
+  const handleSwitchHeightUnit = (nextUnit: HeightUnit) => {
+    if (nextUnit === heightUnit) return;
+    if (nextUnit === "ft-in") {
+      const ftIn = cmToFeetInches(Number(heightCm) || 175);
+      setHeightFeet(String(ftIn.feet));
+      setHeightInches(String(ftIn.inches));
+    } else {
+      const cm = feetInchesToCm(Number(heightFeet) || 5, Number(heightInches) || 9);
+      setHeightCm(String(Math.round(cm)));
+    }
+    setHeightUnit(nextUnit);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!usernameCheck.valid) {
+      setError("Username must be 3–24 letters, numbers, or underscores.");
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
+      const computedHeightCm =
+        heightUnit === "ft-in"
+          ? feetInchesToCm(Number(heightFeet) || 5, Number(heightInches) || 9)
+          : Number(heightCm);
+
       const data = await apiUpdateProfile({
-        name,
-        username,
+        name: name.trim() || usernameCheck.cleaned,
+        username: usernameCheck.cleaned,
         weightValue: Number(weight),
-        heightCm: Number(heightCm),
+        heightCm: computedHeightCm,
         weightUnit,
         heightUnit,
         activeStatus,
@@ -99,7 +148,7 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center px-5 py-10">
+    <div className="min-h-screen bg-black flex items-center justify-center px-5 py-10 pt-safe pb-safe">
       <form
         onSubmit={handleSubmit}
         className="w-full max-w-md apple-card p-6 space-y-5"
@@ -131,7 +180,7 @@ export default function OnboardingPage() {
                 <button
                   key={u}
                   type="button"
-                  onClick={() => setWeightUnit(u)}
+                  onClick={() => handleSwitchWeightUnit(u)}
                   className={`px-2.5 py-1 rounded-md text-[11px] font-semibold cursor-pointer ${
                     weightUnit === u ? "bg-white text-black" : "text-[#86868b]"
                   }`}
@@ -145,7 +194,7 @@ export default function OnboardingPage() {
                 <button
                   key={u}
                   type="button"
-                  onClick={() => setHeightUnit(u)}
+                  onClick={() => handleSwitchHeightUnit(u)}
                   className={`px-2.5 py-1 rounded-md text-[11px] font-semibold cursor-pointer ${
                     heightUnit === u ? "bg-white text-black" : "text-[#86868b]"
                   }`}
@@ -158,15 +207,39 @@ export default function OnboardingPage() {
         </div>
 
         <div className="space-y-3">
-          <div>
-            <label className="block text-[11px] text-[#86868b] mb-1">Username (unique)</label>
-            <input
-              required
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full h-11 px-3.5 rounded-xl bg-black border border-white/12 text-white text-[14px] focus:outline-none focus:border-[#10e760]"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[11px] text-[#86868b] mb-1">Display Name</label>
+              <input
+                required
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Your name"
+                className="w-full h-11 px-3.5 rounded-xl bg-black border border-white/12 text-white text-[14px] focus:outline-none focus:border-[#10e760]"
+              />
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-[11px] text-[#86868b]">Username</label>
+                <span
+                  className={`text-[10px] font-mono ${
+                    usernameCheck.valid ? "text-[#10e760]" : "text-[#86868b]"
+                  }`}
+                >
+                  {usernameCheck.hint}
+                </span>
+              </div>
+              <input
+                required
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="e.g. alex_lifts"
+                className="w-full h-11 px-3.5 rounded-xl bg-black border border-white/12 text-white text-[14px] focus:outline-none focus:border-[#10e760]"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -177,24 +250,67 @@ export default function OnboardingPage() {
               <input
                 required
                 type="number"
+                inputMode="decimal"
                 step="0.1"
                 value={weight}
                 onChange={(e) => setWeight(e.target.value)}
                 className="w-full h-11 px-3.5 rounded-xl bg-black border border-white/12 text-white text-[14px] tabular-nums focus:outline-none focus:border-[#10e760]"
               />
             </div>
-            <div>
-              <label className="block text-[11px] text-[#86868b] mb-1">
-                Height (cm)
-              </label>
-              <input
-                required
-                type="number"
-                value={heightCm}
-                onChange={(e) => setHeightCm(e.target.value)}
-                className="w-full h-11 px-3.5 rounded-xl bg-black border border-white/12 text-white text-[14px] tabular-nums focus:outline-none focus:border-[#10e760]"
-              />
-            </div>
+
+            {heightUnit === "cm" ? (
+              <div>
+                <label className="block text-[11px] text-[#86868b] mb-1">
+                  Height (cm)
+                </label>
+                <input
+                  required
+                  type="number"
+                  inputMode="numeric"
+                  value={heightCm}
+                  onChange={(e) => setHeightCm(e.target.value)}
+                  className="w-full h-11 px-3.5 rounded-xl bg-black border border-white/12 text-white text-[14px] tabular-nums focus:outline-none focus:border-[#10e760]"
+                />
+              </div>
+            ) : (
+              <div>
+                <label className="block text-[11px] text-[#86868b] mb-1">
+                  Height (ft / in)
+                </label>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <div className="relative">
+                    <input
+                      required
+                      type="number"
+                      inputMode="numeric"
+                      min={3}
+                      max={8}
+                      value={heightFeet}
+                      onChange={(e) => setHeightFeet(e.target.value)}
+                      className="w-full h-11 pl-3 pr-6 rounded-xl bg-black border border-white/12 text-white text-[14px] tabular-nums focus:outline-none focus:border-[#10e760]"
+                    />
+                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] text-[#86868b]">
+                      ft
+                    </span>
+                  </div>
+                  <div className="relative">
+                    <input
+                      required
+                      type="number"
+                      inputMode="numeric"
+                      min={0}
+                      max={11}
+                      value={heightInches}
+                      onChange={(e) => setHeightInches(e.target.value)}
+                      className="w-full h-11 pl-3 pr-6 rounded-xl bg-black border border-white/12 text-white text-[14px] tabular-nums focus:outline-none focus:border-[#10e760]"
+                    />
+                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] text-[#86868b]">
+                      in
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div>
@@ -217,6 +333,7 @@ export default function OnboardingPage() {
               <label className="block text-[11px] text-[#86868b] mb-1">Age (optional)</label>
               <input
                 type="number"
+                inputMode="numeric"
                 value={age}
                 onChange={(e) => setAge(e.target.value)}
                 className="w-full h-11 px-3.5 rounded-xl bg-black border border-white/12 text-white text-[14px] tabular-nums focus:outline-none focus:border-[#10e760]"

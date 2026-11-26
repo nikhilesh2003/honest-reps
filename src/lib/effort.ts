@@ -4,6 +4,7 @@ import {
   DailySession,
   DaySummary,
   EffortBand,
+  ExerciseLibraryItem,
   ExerciseLog,
   ExerciseSet,
   GridThresholds,
@@ -1352,5 +1353,284 @@ export function computeProgressAndConsistency(params: {
     progressStatus,
     consistencyPercent,
     consistencyWindowDays,
+  };
+}
+
+export function cmToFeetInches(heightCm: number): { feet: number; inches: number } {
+  const safeCm = Math.max(90, Math.min(260, Number(heightCm) || 175));
+  const totalInches = Math.round(safeCm / 2.54);
+  return {
+    feet: Math.floor(totalInches / 12),
+    inches: totalInches % 12,
+  };
+}
+
+export function feetInchesToCm(feet: number, inches: number): number {
+  const safeFeet = Math.max(3, Math.min(8, Math.floor(Number(feet) || 0)));
+  const safeInches = Math.max(0, Math.min(24, Number(inches) || 0));
+  const totalInches = safeFeet * 12 + safeInches;
+  return Number((totalInches * 2.54).toFixed(1));
+}
+
+export function convertWeightBetweenUnits(
+  value: number,
+  fromUnit: WeightUnit,
+  toUnit: WeightUnit
+): number {
+  const num = Number(value);
+  if (Number.isNaN(num) || num <= 0) return 0;
+  if (fromUnit === toUnit) return Number(num.toFixed(1));
+  if (fromUnit === "kg" && toUnit === "lb") {
+    return Number((num * 2.20462).toFixed(1));
+  }
+  return Number((num / 2.20462).toFixed(1));
+}
+
+export function convertDistanceToKm(value: number, weightUnit: WeightUnit): number {
+  const num = Number(value);
+  if (Number.isNaN(num) || num <= 0) return 0;
+  if (weightUnit === "lb") {
+    return Number((num * 1.60934).toFixed(2));
+  }
+  return Number(num.toFixed(2));
+}
+
+export function convertKmToDisplayDistance(km: number, weightUnit: WeightUnit): number {
+  const num = Number(km);
+  if (Number.isNaN(num) || num <= 0) return 0;
+  if (weightUnit === "lb") {
+    return Number((num * 0.621371).toFixed(1));
+  }
+  return Number(num.toFixed(2));
+}
+
+export function validateUsernameInput(raw: string): {
+  cleaned: string;
+  valid: boolean;
+  hint: string;
+} {
+  const cleaned = raw
+    .trim()
+    .toLowerCase()
+    .replace(/^@/, "")
+    .replace(/[^a-z0-9_]/g, "");
+  if (cleaned.length === 0) {
+    return { cleaned, valid: false, hint: "3–24 lowercase letters, numbers, or _" };
+  }
+  if (cleaned.length < 3) {
+    return { cleaned, valid: false, hint: "At least 3 characters required" };
+  }
+  if (cleaned.length > 24) {
+    return { cleaned: cleaned.slice(0, 24), valid: true, hint: `@${cleaned.slice(0, 24)}` };
+  }
+  return { cleaned, valid: true, hint: `@${cleaned}` };
+}
+
+export function getCalibrationProgress(
+  name: string,
+  kind: "strength" | "cardio",
+  logs: Array<ExerciseLog | CardioLog>,
+  upToDate?: string,
+  upToCreatedAt?: string
+): { sessionCount: number; targetSessions: 3; label: string } {
+  const targetKey =
+    kind === "cardio" ? normalizeCardioActivityKey(name) : name.trim().toLowerCase();
+
+  if (kind === "strength") {
+    const matching = (logs as ExerciseLog[]).filter((l) => {
+      if (l.exerciseName.trim().toLowerCase() !== targetKey) return false;
+      if (!upToDate) return true;
+      if (l.date < upToDate) return true;
+      if (l.date > upToDate) return false;
+      return upToCreatedAt ? l.createdAt <= upToCreatedAt : true;
+    });
+    const count = Math.max(1, Math.min(2, matching.length));
+    return {
+      sessionCount: count,
+      targetSessions: 3,
+      label: `Calibrating ${count}/2`,
+    };
+  }
+
+  const dates = new Set<string>();
+  for (const c of logs as CardioLog[]) {
+    if (c.isRestActivity) continue;
+    if (normalizeCardioActivityKey(c.activityType) !== targetKey) continue;
+    if (upToDate && c.date > upToDate) continue;
+    dates.add(c.date);
+  }
+  const count = Math.max(1, Math.min(2, dates.size));
+  return {
+    sessionCount: count,
+    targetSessions: 3,
+    label: `Calibrating ${count}/2`,
+  };
+}
+
+export function getExerciseLastSessionHint(
+  exerciseName: string,
+  history: ExerciseLog[],
+  weightUnit: WeightUnit
+): {
+  lastDate: string;
+  lastSetsSummary: string;
+  lastEffortScore: number | null;
+  usualWorkTarget: number | null;
+  targetHint: string;
+} | null {
+  const key = exerciseName.trim().toLowerCase();
+  if (!key) return null;
+  const matching = history
+    .filter((l) => l.exerciseName.trim().toLowerCase() === key)
+    .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
+
+  if (matching.length === 0) return null;
+  const latest = matching[0];
+  const lastSetsSummary = latest.sets
+    .slice(0, 4)
+    .map((s) => `${formatWeight(s.weightKg, weightUnit)} × ${s.reps}`)
+    .join(" · ");
+
+  // Usual baseline for next session:
+  // If >= 2 prior logs exist, 3rd+ session is scored!
+  let usualWorkTarget: number | null = null;
+  let targetHint = `Session ${Math.min(2, matching.length + 1)}/2 calibration`;
+  if (matching.length >= 2) {
+    const avgWorkKg = matching.reduce((sum, l) => sum + l.work, 0) / matching.length;
+    usualWorkTarget = Number(avgWorkKg.toFixed(1));
+    const displayVol =
+      weightUnit === "lb" ? Math.round(avgWorkKg * 2.20462) : Math.round(avgWorkKg);
+    targetHint = `Usual (50) ≈ ${displayVol.toLocaleString()} ${weightUnit} vol`;
+  } else {
+    targetHint = "1 more session unlocks Effort score";
+  }
+
+  return {
+    lastDate: latest.date,
+    lastSetsSummary,
+    lastEffortScore: latest.effortScore,
+    usualWorkTarget,
+    targetHint,
+  };
+}
+
+export function getSuggestedRoutineExercises(
+  sessionGroups: string[],
+  history: ExerciseLog[],
+  visibleExercises: ExerciseLibraryItem[],
+  excludeDate?: string
+): string[] {
+  if (!sessionGroups || sessionGroups.length === 0) return [];
+  const targetSet = new Set(sessionGroups.map((g) => g.trim().toLowerCase()));
+  const visibleMap = new Map(
+    visibleExercises.map((e) => [e.name.trim().toLowerCase(), e.name])
+  );
+
+  // Group history by date (descending) excluding today
+  const byDate = new Map<string, ExerciseLog[]>();
+  const sorted = [...history].sort(
+    (a, b) => b.date.localeCompare(a.date) || a.createdAt.localeCompare(b.createdAt)
+  );
+  for (const log of sorted) {
+    if (excludeDate && log.date === excludeDate) continue;
+    const list = byDate.get(log.date) ?? [];
+    list.push(log);
+    byDate.set(log.date, list);
+  }
+
+  for (const [, dayLogs] of byDate.entries()) {
+    const matchingLogs = dayLogs.filter((l) =>
+      targetSet.has(l.muscleGroup.trim().toLowerCase())
+    );
+    if (matchingLogs.length >= 1) {
+      const ordered = [...matchingLogs].sort((a, b) =>
+        a.createdAt.localeCompare(b.createdAt)
+      );
+      const uniqueNames: string[] = [];
+      for (const l of ordered) {
+        const canonical = visibleMap.get(l.exerciseName.trim().toLowerCase()) || l.exerciseName;
+        if (!uniqueNames.some((u) => u.toLowerCase() === canonical.toLowerCase())) {
+          uniqueNames.push(canonical);
+        }
+      }
+      if (uniqueNames.length > 0) return uniqueNames.slice(0, 8);
+    }
+  }
+  return [];
+}
+
+export function buildAlignedMonthCalendar(
+  summaries365: DaySummary[],
+  monthPrefix: string
+): {
+  monthLabel: string;
+  cells: Array<DaySummary | null>;
+  prevMonthPrefix: string | null;
+  nextMonthPrefix: string | null;
+} {
+  const fullMonths = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+  const availablePrefixes = Array.from(
+    new Set(summaries365.map((d) => d.date.slice(0, 7)))
+  ).sort();
+  const activePrefix =
+    availablePrefixes.includes(monthPrefix) || summaries365.length === 0
+      ? monthPrefix
+      : availablePrefixes[availablePrefixes.length - 1] || monthPrefix;
+
+  const idx = availablePrefixes.indexOf(activePrefix);
+  const prevMonthPrefix = idx > 0 ? availablePrefixes[idx - 1] : null;
+  const nextMonthPrefix =
+    idx >= 0 && idx < availablePrefixes.length - 1 ? availablePrefixes[idx + 1] : null;
+
+  const [yStr, mStr] = activePrefix.split("-");
+  const year = Number(yStr) || 2026;
+  const monthIdx = Math.max(0, Math.min(11, (Number(mStr) || 1) - 1));
+  const monthLabel = `${fullMonths[monthIdx]} ${year}`;
+
+  const summaryByDate = new Map(summaries365.map((d) => [d.date, d]));
+  const daysInMonth = new Date(year, monthIdx + 1, 0).getDate();
+  const firstDayMonOffset = (new Date(year, monthIdx, 1).getDay() + 6) % 7;
+
+  const cells: Array<DaySummary | null> = Array.from(
+    { length: firstDayMonOffset },
+    () => null
+  );
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const iso = `${year}-${String(monthIdx + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    cells.push(
+      summaryByDate.get(iso) ?? {
+        date: iso,
+        dayLetter: getDayLetter(iso),
+        shortLabel: formatShortMonthDay(iso),
+        sessionGroups: [],
+        isRest: false,
+        status: "No log",
+        effortScore: null,
+        band: "No log",
+        itemCount: 0,
+        loggedItems: [],
+      }
+    );
+  }
+
+  return {
+    monthLabel,
+    cells,
+    prevMonthPrefix,
+    nextMonthPrefix,
   };
 }

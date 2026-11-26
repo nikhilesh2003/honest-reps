@@ -12,10 +12,13 @@ import {
   Bell,
   X,
   MapPin,
+  WifiOff,
 } from "lucide-react";
 import { AppStatePayload } from "@/lib/client-types";
 import {
   apiGetState,
+  apiJoinPublicGym,
+  apiRegisterOrUpdatePublicGym,
   apiSetInGym,
   apiSignOut,
   apiSyncFriendsNow,
@@ -48,12 +51,12 @@ import {
   registerOrUpdatePublicGym,
   setGymGeoSuppressed,
 } from "@/lib/gym-location";
-import { apiJoinPublicGym, apiRegisterOrUpdatePublicGym } from "@/lib/client-engine";
 import { triggerHaptic } from "@/lib/haptics";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { CardioLog, ExerciseLog } from "@/lib/types";
 import { Toast, ToastMessage } from "./ui/Toast";
 import { BottomSheet } from "./ui/BottomSheet";
+import { RestTimerPill, RestTimerState } from "./ui/RestTimerPill";
 import { HomeTab } from "./tabs/HomeTab";
 import { LogsTab } from "./tabs/LogsTab";
 import { FriendsTab } from "./tabs/FriendsTab";
@@ -67,6 +70,12 @@ import { GymLocationSheet } from "./modals/GymLocationSheet";
 
 type TabId = "home" | "logs" | "friends" | "leaderboard" | "analytics" | "profile";
 
+export interface ShowToastOptions {
+  actionLabel?: string;
+  onAction?: () => void;
+  durationMs?: number;
+}
+
 export function GymAppShell() {
   const router = useRouter();
   const [state, setState] = useState<AppStatePayload | null>(null);
@@ -74,6 +83,15 @@ export function GymAppShell() {
   const [activeTab, setActiveTab] = useState<TabId>("home");
   const [dayShift, setDayShift] = useState(0);
   const [toast, setToast] = useState<ToastMessage | null>(null);
+  const [isOffline, setIsOffline] = useState(false);
+
+  // Rest Timer State
+  const [restDefaultSec, setRestDefaultSec] = useState<number>(() => {
+    if (typeof window === "undefined") return 90;
+    const stored = Number(window.localStorage.getItem("hr_rest_default_sec") || 90);
+    return [60, 90, 120, 180].includes(stored) ? stored : 90;
+  });
+  const [restTimer, setRestTimer] = useState<RestTimerState | null>(null);
 
   // Modals
   const [checkinOpen, setCheckinOpen] = useState(false);
@@ -82,11 +100,12 @@ export function GymAppShell() {
   const [geoStatus, setGeoStatus] = useState<
     "idle" | "watching" | "denied" | "unavailable" | "error"
   >("idle");
-  const [gymDistanceMeters, setGymDistanceMeters] = useState<number | null>(null);
-  const [nearbyGymPrompt, setNearbyGymPrompt] = useState<{ gym: PublicGym; distanceMeters: number } | null>(null);
+  const [nearbyGymPrompt, setNearbyGymPrompt] = useState<{
+    gym: PublicGym;
+    distanceMeters: number;
+  } | null>(null);
   const [osmGymPrompt, setOsmGymPrompt] = useState<OsmNearbyGym | null>(null);
   const [noNearbyGymPrompt, setNoNearbyGymPrompt] = useState(false);
-  const [geoRetryNonce, setGeoRetryNonce] = useState(0);
   const geoActivatingRef = useRef(false);
   const stateRef = useRef<AppStatePayload | null>(null);
   const [strengthOpen, setStrengthOpen] = useState(false);
@@ -110,34 +129,150 @@ export function GymAppShell() {
     }
   });
 
+  // Track online/offline state for basement gym clarity
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const tabParam = params.get("tab") as TabId | null;
-      if (
-        tabParam &&
-        ["home", "logs", "friends", "leaderboard", "analytics", "profile"].includes(tabParam)
-      ) {
-        setActiveTab(tabParam);
-        window.history.replaceState({}, "", "/");
-      }
-      if ("Notification" in window) {
-        setNotifPerm(Notification.permission);
-        if (Notification.permission === "granted") {
-          void ensureWebPushSubscribed();
-        }
-      } else {
-        setNotifPerm("unsupported");
+    if (typeof window === "undefined") return;
+    setIsOffline(!navigator.onLine);
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
+  const switchTab = useCallback((nextTab: TabId, pushHistory = true) => {
+    setActiveTab(nextTab);
+    if (typeof window !== "undefined" && pushHistory) {
+      const nextUrl = nextTab === "home" ? "/" : `/?tab=${nextTab}`;
+      if (window.location.pathname + window.location.search !== nextUrl) {
+        window.history.pushState({ tab: nextTab }, "", nextUrl);
       }
     }
   }, []);
 
-  const showToast = useCallback((text: string, tone: "success" | "error" | "info" = "success") => {
-    const id = Date.now();
-    setToast({ id, text, tone });
-    setTimeout(() => {
-      setToast((curr) => (curr && curr.id === id ? null : curr));
-    }, 2800);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get("tab") as TabId | null;
+    if (
+      tabParam &&
+      ["home", "logs", "friends", "leaderboard", "analytics", "profile"].includes(tabParam)
+    ) {
+      setActiveTab(tabParam);
+    }
+    if ("Notification" in window) {
+      setNotifPerm(Notification.permission);
+      if (Notification.permission === "granted") {
+        void ensureWebPushSubscribed();
+      }
+    } else {
+      setNotifPerm("unsupported");
+    }
+
+    const onPopState = () => {
+      // Close any open modal first before switching tabs
+      if (strengthOpen) {
+        setStrengthOpen(false);
+        setEditingStrength(null);
+        return;
+      }
+      if (cardioOpen) {
+        setCardioOpen(false);
+        setEditingCardio(null);
+        return;
+      }
+      if (checkinOpen) {
+        setCheckinOpen(false);
+        return;
+      }
+      if (gymLocationOpen) {
+        setGymLocationOpen(false);
+        return;
+      }
+      if (notifInboxOpen) {
+        setNotifInboxOpen(false);
+        return;
+      }
+      const p = new URLSearchParams(window.location.search);
+      const t = (p.get("tab") as TabId | null) || "home";
+      if (["home", "logs", "friends", "leaderboard", "analytics", "profile"].includes(t)) {
+        setActiveTab(t);
+      } else {
+        setActiveTab("home");
+      }
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, [strengthOpen, cardioOpen, checkinOpen, gymLocationOpen, notifInboxOpen]);
+
+  const showToast = useCallback(
+    (
+      text: string,
+      tone: "success" | "error" | "info" = "success",
+      options?: ShowToastOptions
+    ) => {
+      const id = Date.now();
+      setToast({
+        id,
+        text,
+        tone,
+        actionLabel: options?.actionLabel,
+        onAction: options?.onAction,
+      });
+      const duration = options?.durationMs ?? (options?.actionLabel ? 5500 : 2800);
+      setTimeout(() => {
+        setToast((curr) => (curr && curr.id === id ? null : curr));
+      }, duration);
+    },
+    []
+  );
+
+  const handleStartRestTimer = useCallback(
+    (label?: string, customSeconds?: number) => {
+      const dur = customSeconds ?? restDefaultSec;
+      const now = Date.now();
+      setRestTimer({
+        active: true,
+        durationSeconds: dur,
+        targetEndMs: now + dur * 1000,
+        label,
+      });
+    },
+    [restDefaultSec]
+  );
+
+  const handleAdjustRestSeconds = useCallback((deltaSeconds: number) => {
+    setRestTimer((curr) => {
+      if (!curr || !curr.active) return curr;
+      const now = Date.now();
+      const baseMs = Math.max(now, curr.targetEndMs);
+      const nextTarget = Math.max(now + 1000, baseMs + deltaSeconds * 1000);
+      const nextDur = Math.max(15, curr.durationSeconds + deltaSeconds);
+      return {
+        ...curr,
+        durationSeconds: nextDur,
+        targetEndMs: nextTarget,
+      };
+    });
+  }, []);
+
+  const handleSelectRestPreset = useCallback((seconds: number) => {
+    setRestDefaultSec(seconds);
+    try {
+      window.localStorage.setItem("hr_rest_default_sec", String(seconds));
+    } catch {}
+    setRestTimer((curr) =>
+      curr && curr.active
+        ? {
+            ...curr,
+            durationSeconds: seconds,
+            targetEndMs: Date.now() + seconds * 1000,
+          }
+        : curr
+    );
   }, []);
 
   const fetchState = useCallback(
@@ -171,10 +306,45 @@ export function GymAppShell() {
     setGymLocation(getSavedGymLocation(currentUserId));
   }, [currentUserId]);
 
+  // Screen Wake Lock while "In the Gym" or Rest Timer is active so screen stays awake between sets
+  const inGymForWakeLock = state ? isProfileInGym(state.profile) : false;
   useEffect(() => {
-    if (!currentUserId) {
+    const shouldKeepAwake = inGymForWakeLock || Boolean(restTimer?.active);
+    if (!shouldKeepAwake || typeof navigator === "undefined" || !("wakeLock" in navigator)) {
+      return;
+    }
+    let sentinel: WakeLockSentinel | null = null;
+    let cancelled = false;
+
+    const acquire = async () => {
+      try {
+        if (cancelled || document.visibilityState !== "visible") return;
+        sentinel = await navigator.wakeLock.request("screen");
+      } catch {
+        // Ignore on unsupported devices or low-power mode
+      }
+    };
+
+    void acquire();
+    const onVis = () => {
+      if (document.visibilityState === "visible") {
+        void acquire();
+      }
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      cancelled = true;
+      document.removeEventListener("visibilitychange", onVis);
+      if (sentinel) {
+        void sentinel.release().catch(() => {});
+      }
+    };
+  }, [inGymForWakeLock, restTimer?.active]);
+
+  // Only watch continuous GPS when user has explicitly enabled a saved gym location (no idle battery drain or launch permission ambush)
+  useEffect(() => {
+    if (!currentUserId || !gymLocation?.enabled) {
       setGeoStatus("idle");
-      setGymDistanceMeters(null);
       return;
     }
     if (typeof navigator === "undefined" || !("geolocation" in navigator)) {
@@ -188,53 +358,48 @@ export function GymAppShell() {
         const currState = stateRef.current;
         if (!currState || currState.suspended) return;
 
-        // 1. Evaluate user's own saved gym location
-        if (gymLocation?.enabled) {
-          const currInGym = isProfileInGym(currState.profile);
-          const suppressed = isGymGeoSuppressed(currentUserId);
-          const res = evaluateGymGeofence({
-            gym: gymLocation,
-            currentLat: pos.coords.latitude,
-            currentLng: pos.coords.longitude,
-            currentlyInGym: currInGym,
-            suppressedUntilLeft: suppressed,
-          });
+        const currInGym = isProfileInGym(currState.profile);
+        const suppressed = isGymGeoSuppressed(currentUserId);
+        const res = evaluateGymGeofence({
+          gym: gymLocation,
+          currentLat: pos.coords.latitude,
+          currentLng: pos.coords.longitude,
+          currentlyInGym: currInGym,
+          suppressedUntilLeft: suppressed,
+        });
 
-          setGeoStatus("watching");
-          setGymDistanceMeters(res.distanceMeters);
+        setGeoStatus("watching");
 
-          if (res.action === "clear_suppression") {
-            setGymGeoSuppressed(currentUserId, false);
-          } else if (res.action === "activate" && !geoActivatingRef.current) {
-            geoActivatingRef.current = true;
-            void (async () => {
-              try {
-                await apiSetInGym(true);
-                triggerHaptic("success");
-                showToast(`Arrived at ${gymLocation.name} · In the Gym is ON`);
-                void showLocalNotification(
-                  "In the Gym · Auto-Activated",
-                  `Welcome to ${gymLocation.name}. Pick today's muscle groups.`,
-                  "gym-geo-arrived"
-                );
-                await fetchState(dayShift);
-                const needsMusclePick =
-                  !currState.todaySession ||
-                  currState.todaySession.isRest ||
-                  currState.todaySession.muscleGroups.length === 0;
-                if (needsMusclePick) {
-                  setCheckinOpen(true);
-                }
-              } catch {
-                // ignore transient network errors; next position tick retries
-              } finally {
-                geoActivatingRef.current = false;
+        if (res.action === "clear_suppression") {
+          setGymGeoSuppressed(currentUserId, false);
+        } else if (res.action === "activate" && !geoActivatingRef.current) {
+          geoActivatingRef.current = true;
+          void (async () => {
+            try {
+              await apiSetInGym(true);
+              triggerHaptic("success");
+              showToast(`Arrived at ${gymLocation.name} · In the Gym is ON`);
+              void showLocalNotification(
+                "In the Gym · Auto-Activated",
+                `Welcome to ${gymLocation.name}. Pick today's muscle groups.`,
+                "gym-geo-arrived"
+              );
+              await fetchState(dayShift);
+              const needsMusclePick =
+                !currState.todaySession ||
+                currState.todaySession.isRest ||
+                currState.todaySession.muscleGroups.length === 0;
+              if (needsMusclePick) {
+                setCheckinOpen(true);
               }
-            })();
-          }
+            } catch {
+              // ignore transient network errors
+            } finally {
+              geoActivatingRef.current = false;
+            }
+          })();
         }
 
-        // 2. Evaluate if arrived at a Public Gym not yet joined
         const publicArrival = evaluatePublicGymsArrival({
           currentLat: pos.coords.latitude,
           currentLng: pos.coords.longitude,
@@ -257,7 +422,7 @@ export function GymAppShell() {
       },
       {
         enableHighAccuracy: true,
-        maximumAge: 15000,
+        maximumAge: 20000,
         timeout: 15000,
       }
     );
@@ -265,7 +430,7 @@ export function GymAppShell() {
     return () => {
       navigator.geolocation.clearWatch(watchId);
     };
-  }, [currentUserId, gymLocation, dayShift, fetchState, showToast, geoRetryNonce]);
+  }, [currentUserId, gymLocation, dayShift, fetchState, showToast]);
 
   useEffect(() => {
     fetchState(dayShift);
@@ -312,6 +477,7 @@ export function GymAppShell() {
       sentBy: string;
       sentAt: string;
     }) => {
+      if (typeof navigator !== "undefined" && !navigator.onLine) return;
       await apiSyncFriendsNow().catch(() => {});
       const latest = await apiGetState(dayShift, { forceRemoteSync: true }).catch(() => null);
       if (latest && latest.authenticated) {
@@ -329,7 +495,6 @@ export function GymAppShell() {
       }
     };
 
-    // Exact timers for 1h, 1h30, and 2h gym milestones while the app is open
     const gymTimers: number[] = [];
     if (state.profile.inGym && state.profile.gymStartedAt) {
       const startMs = Date.parse(state.profile.gymStartedAt);
@@ -349,7 +514,7 @@ export function GymAppShell() {
 
     const timer = window.setInterval(() => {
       void syncAndEvaluate();
-    }, 10000);
+    }, 12000);
 
     const onVisibilityOrFocus = () => {
       if (typeof document === "undefined" || document.visibilityState === "visible") {
@@ -371,7 +536,7 @@ export function GymAppShell() {
             tabParam &&
             ["home", "logs", "friends", "leaderboard", "analytics", "profile"].includes(tabParam)
           ) {
-            setActiveTab(tabParam);
+            switchTab(tabParam);
             setNotifInboxOpen(false);
           }
         } catch {}
@@ -452,7 +617,6 @@ export function GymAppShell() {
       navigator.serviceWorker.addEventListener("message", onSwMessage);
     }
 
-    // Subscribe to real-time database changes and admin broadcasts
     const sb = createSupabaseBrowserClient();
     const channel = sb
       ? sb
@@ -470,69 +634,33 @@ export function GymAppShell() {
               | undefined;
             debouncedSyncAndEvaluate(payload);
           })
-          .on(
-            "postgres_changes",
-            { event: "*", schema: "public", table: "sessions" },
-            () => {
-              debouncedSyncAndEvaluate();
-            }
-          )
-          .on(
-            "postgres_changes",
-            { event: "*", schema: "public", table: "friendships" },
-            () => {
-              debouncedSyncAndEvaluate();
-            }
-          )
-          .on(
-            "postgres_changes",
-            { event: "*", schema: "public", table: "exercise_logs" },
-            () => {
-              debouncedSyncAndEvaluate();
-            }
-          )
-          .on(
-            "postgres_changes",
-            { event: "*", schema: "public", table: "exercise_sets" },
-            () => {
-              debouncedSyncAndEvaluate();
-            }
-          )
-          .on(
-            "postgres_changes",
-            { event: "*", schema: "public", table: "cardio_logs" },
-            () => {
-              debouncedSyncAndEvaluate();
-            }
-          )
-          .on(
-            "postgres_changes",
-            { event: "*", schema: "public", table: "effort_scores" },
-            () => {
-              debouncedSyncAndEvaluate();
-            }
-          )
-          .on(
-            "postgres_changes",
-            { event: "*", schema: "public", table: "profiles" },
-            () => {
-              debouncedSyncAndEvaluate();
-            }
-          )
-          .on(
-            "postgres_changes",
-            { event: "*", schema: "public", table: "weight_logs" },
-            () => {
-              debouncedSyncAndEvaluate();
-            }
-          )
-          .on(
-            "postgres_changes",
-            { event: "*", schema: "public", table: "app_settings" },
-            () => {
-              debouncedSyncAndEvaluate();
-            }
-          )
+          .on("postgres_changes", { event: "*", schema: "public", table: "sessions" }, () => {
+            debouncedSyncAndEvaluate();
+          })
+          .on("postgres_changes", { event: "*", schema: "public", table: "friendships" }, () => {
+            debouncedSyncAndEvaluate();
+          })
+          .on("postgres_changes", { event: "*", schema: "public", table: "exercise_logs" }, () => {
+            debouncedSyncAndEvaluate();
+          })
+          .on("postgres_changes", { event: "*", schema: "public", table: "exercise_sets" }, () => {
+            debouncedSyncAndEvaluate();
+          })
+          .on("postgres_changes", { event: "*", schema: "public", table: "cardio_logs" }, () => {
+            debouncedSyncAndEvaluate();
+          })
+          .on("postgres_changes", { event: "*", schema: "public", table: "effort_scores" }, () => {
+            debouncedSyncAndEvaluate();
+          })
+          .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => {
+            debouncedSyncAndEvaluate();
+          })
+          .on("postgres_changes", { event: "*", schema: "public", table: "weight_logs" }, () => {
+            debouncedSyncAndEvaluate();
+          })
+          .on("postgres_changes", { event: "*", schema: "public", table: "app_settings" }, () => {
+            debouncedSyncAndEvaluate();
+          })
           .subscribe()
       : null;
 
@@ -549,32 +677,15 @@ export function GymAppShell() {
         void sb.removeChannel(channel);
       }
     };
-  }, [state?.profile.userId, state?.profile.inGym, state?.profile.gymStartedAt, dayShift, showToast, fetchState]);
-
-  // Automatically request device notification permission on first user gesture if still "default"
-  useEffect(() => {
-    if (!state || typeof window === "undefined" || !("Notification" in window)) return;
-    if (Notification.permission !== "default") return;
-
-    let handled = false;
-    const onFirstGesture = async () => {
-      if (handled || Notification.permission !== "default") return;
-      handled = true;
-      window.removeEventListener("click", onFirstGesture);
-      const perm = await requestAppNotificationPermission();
-      setNotifPerm(perm);
-      if (perm === "granted") {
-        await apiUpdateNotifications({ pushSubscribed: true }).catch(() => {});
-        await ensureWebPushSubscribed().catch(() => {});
-        setInboxItems(getInAppNotifications());
-      }
-    };
-
-    window.addEventListener("click", onFirstGesture, { once: true });
-    return () => {
-      window.removeEventListener("click", onFirstGesture);
-    };
-  }, [state, showToast]);
+  }, [
+    state?.profile.userId,
+    state?.profile.inGym,
+    state?.profile.gymStartedAt,
+    dayShift,
+    showToast,
+    fetchState,
+    switchTab,
+  ]);
 
   const handleSignOut = async () => {
     await apiSignOut();
@@ -635,7 +746,12 @@ export function GymAppShell() {
     if (gymLocation?.enabled) {
       setGymGeoSuppressed(state.profile.userId, !next);
     }
-    if (next && typeof window !== "undefined" && "Notification" in window && Notification.permission === "default") {
+    if (
+      next &&
+      typeof window !== "undefined" &&
+      "Notification" in window &&
+      Notification.permission === "default"
+    ) {
       const perm = await requestAppNotificationPermission();
       setNotifPerm(perm);
       if (perm === "granted") {
@@ -646,7 +762,7 @@ export function GymAppShell() {
     await apiSetInGym(next);
     showToast(
       next
-        ? "In the Gym is ON · Check-ins at 1h, 1h30 · Auto-off at 2h"
+        ? "In the Gym is ON · Screen awake · Auto-off at 2h"
         : "In the Gym turned OFF"
     );
     await fetchState(dayShift);
@@ -750,40 +866,24 @@ export function GymAppShell() {
     await fetchState(dayShift);
   };
 
-  const handleRequestLocation = () => {
-    if (typeof navigator === "undefined" || !("geolocation" in navigator)) {
-      setGeoStatus("unavailable");
-      showToast("GPS location is unavailable on this device", "error");
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      () => {
-        setGeoStatus("watching");
-        setGeoRetryNonce((n) => n + 1);
-        showToast("Location enabled while using the app");
-      },
-      (err) => {
-        if (err.code === 1) {
-          setGeoStatus("denied");
-          showToast("Allow location in browser/site settings while using the app", "error");
-        } else {
-          setGeoStatus("error");
-          setGeoRetryNonce((n) => n + 1);
-        }
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
-  };
-
   return (
     <div className="min-h-screen bg-black text-[#f5f5f7] flex flex-col items-center">
-      <Toast toast={toast} />
+      <Toast toast={toast} onDismiss={() => setToast(null)} />
+
+      {/* Persistent Floating Rest Timer */}
+      <RestTimerPill
+        timer={restTimer}
+        defaultDuration={restDefaultSec}
+        onAdjustSeconds={handleAdjustRestSeconds}
+        onSelectPreset={handleSelectRestPreset}
+        onDismiss={() => setRestTimer(null)}
+      />
 
       {/* Floating Public Gym Arrival Banner */}
       {nearbyGymPrompt && (
         <aside
           aria-label="Nearby gym discovery"
-          className="fixed top-2 left-3 right-3 z-50 max-w-[460px] mx-auto p-3.5 rounded-2xl bg-black/95 border border-[#10e760]/40 shadow-2xl backdrop-blur-xl flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-3"
+          className="fixed top-[calc(0.5rem+env(safe-area-inset-top,0px))] left-3 right-3 z-50 max-w-[480px] mx-auto p-3.5 rounded-2xl bg-black/95 border border-[#10e760]/40 shadow-2xl backdrop-blur-xl flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-3"
         >
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-9 h-9 rounded-xl bg-[#10e760]/15 border border-[#10e760]/30 flex items-center justify-center shrink-0">
@@ -818,11 +918,11 @@ export function GymAppShell() {
         </aside>
       )}
 
-      {/* Floating OpenStreetMap Gym Prompt when no contributor gym matched */}
+      {/* Floating OpenStreetMap Gym Prompt */}
       {!nearbyGymPrompt && osmGymPrompt && (
         <aside
           aria-label="Detected nearby gym"
-          className="fixed top-2 left-3 right-3 z-50 max-w-[460px] mx-auto p-3.5 rounded-2xl bg-black/95 border border-[#10e760]/40 shadow-2xl backdrop-blur-xl flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-3"
+          className="fixed top-[calc(0.5rem+env(safe-area-inset-top,0px))] left-3 right-3 z-50 max-w-[480px] mx-auto p-3.5 rounded-2xl bg-black/95 border border-[#10e760]/40 shadow-2xl backdrop-blur-xl flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-3"
         >
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-9 h-9 rounded-xl bg-[#10e760]/15 border border-[#10e760]/30 flex items-center justify-center shrink-0">
@@ -860,7 +960,7 @@ export function GymAppShell() {
       {!nearbyGymPrompt && !osmGymPrompt && noNearbyGymPrompt && (
         <aside
           aria-label="Add gym location"
-          className="fixed top-2 left-3 right-3 z-50 max-w-[460px] mx-auto p-3.5 rounded-2xl bg-black/95 border border-white/15 shadow-2xl backdrop-blur-xl flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-3"
+          className="fixed top-[calc(0.5rem+env(safe-area-inset-top,0px))] left-3 right-3 z-50 max-w-[480px] mx-auto p-3.5 rounded-2xl bg-black/95 border border-white/15 shadow-2xl backdrop-blur-xl flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-3"
         >
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-9 h-9 rounded-xl bg-white/[0.06] border border-white/10 flex items-center justify-center shrink-0">
@@ -897,12 +997,12 @@ export function GymAppShell() {
         </aside>
       )}
 
-      {/* Minimal Top App Bar with Notifications & Profile in Header */}
-      <header className="sticky top-0 z-30 w-full bg-black/85 backdrop-blur-xl border-b border-white/[0.06]">
-        <div className="max-w-[460px] mx-auto px-4 h-16 flex items-center justify-between gap-2">
+      {/* Minimal Top App Bar with Safe Area, Offline Pill, Notifications & Profile */}
+      <header className="sticky top-0 z-30 w-full bg-black/85 backdrop-blur-xl border-b border-white/[0.06] pt-safe">
+        <div className="max-w-[480px] mx-auto px-4 h-16 flex items-center justify-between gap-2">
           <button
             type="button"
-            onClick={() => setActiveTab("home")}
+            onClick={() => switchTab("home")}
             className="flex items-center gap-3 cursor-pointer"
           >
             <span className="brand-icon-box w-14 h-11 rounded-[12px] flex items-center justify-center shrink-0 overflow-hidden">
@@ -918,6 +1018,16 @@ export function GymAppShell() {
           </button>
 
           <div className="flex items-center gap-2">
+            {isOffline && (
+              <span
+                title="Offline — workouts save locally and sync automatically when back online"
+                className="px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[10px] font-semibold flex items-center gap-1"
+              >
+                <WifiOff className="w-3 h-3" />
+                Offline
+              </span>
+            )}
+
             <button
               type="button"
               aria-label="Notifications"
@@ -939,7 +1049,7 @@ export function GymAppShell() {
             <button
               type="button"
               aria-label="Profile"
-              onClick={() => setActiveTab("profile")}
+              onClick={() => switchTab("profile")}
               className={`h-10 px-2.5 rounded-full border flex items-center gap-1.5 transition-colors cursor-pointer ${
                 activeTab === "profile"
                   ? "bg-[#10e760]/15 border-[#10e760]/50 text-[#10e760]"
@@ -956,11 +1066,11 @@ export function GymAppShell() {
       </header>
 
       {/* Main Content Container */}
-      <main className="w-full max-w-[460px] flex-1 px-4 pt-3 pb-24">
+      <main className="w-full max-w-[480px] flex-1 px-4 pt-3 pb-[calc(6rem+env(safe-area-inset-bottom,0px))]">
         {notifPerm === "default" && !permBannerDismissed && (
           <div className="mb-3 p-3 rounded-2xl bg-[#10e760]/10 border border-[#10e760]/30 flex items-center justify-between gap-2.5">
             <div className="text-[12px] text-white leading-snug min-w-0">
-              Enable device notifications to receive admin & workout alerts directly on your phone or desktop.
+              Enable device notifications to receive workout &amp; friend alerts directly on your phone.
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
               <button
@@ -1026,7 +1136,17 @@ export function GymAppShell() {
               setCardioBackfill(false);
               setCardioOpen(true);
             }}
-            onNavigateTab={(tab) => setActiveTab(tab)}
+            onEditStrength={(log) => {
+              setEditingStrength(log);
+              setStrengthBackfill(false);
+              setStrengthOpen(true);
+            }}
+            onEditCardio={(log) => {
+              setEditingCardio(log);
+              setCardioBackfill(false);
+              setCardioOpen(true);
+            }}
+            onNavigateTab={(tab) => switchTab(tab)}
           />
         )}
 
@@ -1054,8 +1174,10 @@ export function GymAppShell() {
               setCardioBackfill(false);
               setCardioOpen(true);
             }}
-            onDeleted={(msg) => {
-              showToast(msg);
+            onRefresh={() => fetchState(dayShift)}
+            onToast={showToast}
+            onDeleted={(msg, undoHandler) => {
+              showToast(msg, "info", undoHandler ? { actionLabel: "Undo", onAction: undoHandler } : undefined);
               fetchState(dayShift);
             }}
           />
@@ -1066,7 +1188,7 @@ export function GymAppShell() {
             state={state}
             onRefresh={() => fetchState(dayShift)}
             onToast={showToast}
-            onNavigateLeaderboard={() => setActiveTab("leaderboard")}
+            onNavigateLeaderboard={() => switchTab("leaderboard")}
           />
         )}
 
@@ -1074,7 +1196,8 @@ export function GymAppShell() {
           <LeaderboardTab
             state={state}
             onRefresh={() => fetchState(dayShift)}
-            onNavigateFriends={() => setActiveTab("friends")}
+            onNavigateFriends={() => switchTab("friends")}
+            onNavigateProfile={() => switchTab("profile")}
           />
         )}
 
@@ -1093,9 +1216,9 @@ export function GymAppShell() {
         )}
       </main>
 
-      {/* Bottom iOS-Style Tab Bar */}
-      <nav className="fixed bottom-0 left-0 right-0 z-30 bg-black/90 backdrop-blur-xl border-t border-white/[0.08]">
-        <div className="max-w-[460px] mx-auto px-2 h-[68px] grid grid-cols-5 items-center">
+      {/* Bottom iOS-Style Tab Bar with Safe Area */}
+      <nav className="fixed bottom-0 left-0 right-0 z-30 bg-black/90 backdrop-blur-xl border-t border-white/[0.08] pb-safe">
+        <div className="max-w-[480px] mx-auto px-2 h-[68px] grid grid-cols-5 items-center">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = activeTab === item.id;
@@ -1107,7 +1230,7 @@ export function GymAppShell() {
                 type="button"
                 onClick={() => {
                   triggerHaptic("selection");
-                  setActiveTab(item.id);
+                  switchTab(item.id);
                 }}
                 className={`relative flex flex-col items-center justify-center gap-1 py-1.5 transition-colors cursor-pointer ${
                   active ? "text-[#10e760]" : "text-[#86868b] hover:text-white"
@@ -1161,6 +1284,8 @@ export function GymAppShell() {
         initialBackfill={strengthBackfill}
         initialExerciseName={strengthPreselect}
         editingLog={editingStrength}
+        defaultRestSeconds={restDefaultSec}
+        onTriggerRestTimer={handleStartRestTimer}
         onSaved={(msg) => {
           showToast(msg);
           fetchState(dayShift);
@@ -1205,6 +1330,7 @@ export function GymAppShell() {
                   type="button"
                   onClick={async () => {
                     const perm = await requestAppNotificationPermission();
+                    setNotifPerm(perm);
                     if (perm === "granted") {
                       await apiUpdateNotifications({ pushSubscribed: true });
                       await showLocalNotification(
@@ -1258,7 +1384,7 @@ export function GymAppShell() {
                       type="button"
                       onClick={() => {
                         if (targetTab) {
-                          setActiveTab(targetTab);
+                          switchTab(targetTab);
                           setNotifInboxOpen(false);
                         }
                       }}

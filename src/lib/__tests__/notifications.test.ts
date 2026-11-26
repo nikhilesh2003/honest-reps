@@ -208,6 +208,7 @@ function buildMockState(overrides?: Partial<AppStatePayload>): AppStatePayload {
       belowUsualRoot: 4,
     },
     announcements: [],
+    publicGyms: [],
     ...overrides,
   };
 }

@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CalendarPlus, Pencil, Trash2 } from "lucide-react";
+import { CalendarPlus, Pencil, Search, Trash2, X } from "lucide-react";
 import { AppStatePayload } from "@/lib/client-types";
-import { apiDeleteLog } from "@/lib/client-engine";
+import { apiDeleteLog, apiRestoreDeletedLogs } from "@/lib/client-engine";
 import { CardioLog, ExerciseLog } from "@/lib/types";
 import {
   detectPersonalRecords,
@@ -12,6 +12,7 @@ import {
   formatLogTime,
   formatRestDuration,
   formatWeight,
+  getCalibrationProgress,
   normalizeCardioActivityKey,
 } from "@/lib/effort";
 import { BottomSheet } from "../ui/BottomSheet";
@@ -22,7 +23,9 @@ interface LogsTabProps {
   onOpenBackfillCardio: () => void;
   onEditStrength: (log: ExerciseLog) => void;
   onEditCardio: (log: CardioLog) => void;
-  onDeleted: (msg: string) => void;
+  onRefresh: () => void;
+  onToast: (text: string, tone?: "success" | "error" | "info") => void;
+  onDeleted: (msg: string, undoHandler?: () => void) => void;
 }
 
 type FilterKey = "all" | "strength" | "cardio" | "calibrating" | "rest" | "backfilled";
@@ -32,11 +35,13 @@ interface UnifiedLogRow {
   kind: "strength" | "cardio";
   date: string;
   title: string;
+  rawName: string;
   subtitle: string;
   details: string;
   kcal?: number;
   effortScore: number | null;
   status: "Calibrating" | "Scored" | "Rest";
+  calibrationLabel?: string;
   addedLater: boolean;
   kcalIsEstimated?: boolean;
   source: string;
@@ -59,9 +64,13 @@ export function LogsTab({
   onOpenBackfillCardio,
   onEditStrength,
   onEditCardio,
+  onRefresh,
+  onToast,
   onDeleted,
 }: LogsTabProps) {
   const [filter, setFilter] = useState<FilterKey>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [visibleLimit, setVisibleLimit] = useState(45);
   const [backfillPickerOpen, setBackfillPickerOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -69,7 +78,6 @@ export function LogsTab({
 
   const unifiedLogs = useMemo<UnifiedLogRow[]>(() => {
     const strengthRows: UnifiedLogRow[] = state.recentExerciseLogs.map((e) => {
-      // Find earlier logs for this exercise to detect if this session achieved a PR
       const priorHistory = state.recentExerciseLogs.filter(
         (l) =>
           l.exerciseName.trim().toLowerCase() === e.exerciseName.trim().toLowerCase() &&
@@ -86,11 +94,23 @@ export function LogsTab({
           ? Math.round(restValues.reduce((acc, r) => acc + r, 0) / restValues.length)
           : 0;
 
+      const calLabel =
+        e.status === "Calibrating"
+          ? getCalibrationProgress(
+              e.exerciseName,
+              "strength",
+              state.recentExerciseLogs,
+              e.date,
+              e.createdAt
+            ).label
+          : undefined;
+
       return {
         id: e.id,
         kind: "strength",
         date: e.date,
         title: e.exerciseName,
+        rawName: e.exerciseName,
         subtitle: e.muscleGroup,
         details:
           e.sets
@@ -101,6 +121,7 @@ export function LogsTab({
           (typeof e.rir === "number" ? ` · RIR ${e.rir === 4 ? "4+" : e.rir}` : ""),
         effortScore: e.effortScore,
         status: e.status,
+        calibrationLabel: calLabel,
         addedLater: e.addedLater,
         source: e.source,
         createdAt: e.createdAt,
@@ -138,6 +159,24 @@ export function LogsTab({
 
       for (const groupLogs of activityGroups.values()) {
         const sorted = [...groupLogs].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+        const rowStatus = sorted.every((c) => c.isRestActivity)
+          ? "Rest"
+          : sorted
+              .filter((c) => !c.isRestActivity)
+              .every((c) => c.status === "Scored" && typeof c.effortScore === "number")
+          ? "Scored"
+          : "Calibrating";
+
+        const calLabel =
+          rowStatus === "Calibrating"
+            ? getCalibrationProgress(
+                sorted[0].activityType,
+                "cardio",
+                state.recentCardioLogs,
+                date
+              ).label
+            : undefined;
+
         if (sorted.length > 1) {
           const splits = sorted.map((c, idx) => ({
             id: c.id,
@@ -160,12 +199,11 @@ export function LogsTab({
                 )
               : null;
           const activeLogs = sorted.filter((c) => !c.isRestActivity);
-          const allRest = activeLogs.length === 0;
           const scoredLogs = activeLogs.filter(
             (c) => c.status === "Scored" && typeof c.effortScore === "number"
           );
-          const allScored = activeLogs.length > 0 && scoredLogs.length === activeLogs.length;
-          const dailyCardioScore = allScored ? scoredLogs[0].effortScore : null;
+          const dailyCardioScore =
+            rowStatus === "Scored" && scoredLogs.length > 0 ? scoredLogs[0].effortScore : null;
           const displayTitle =
             normalizeCardioActivityKey(sorted[0].activityType) === "indoor walk"
               ? "Indoor Walk"
@@ -176,18 +214,19 @@ export function LogsTab({
             kind: "cardio",
             date,
             title: `${displayTitle} (${splits.length} Splits)`,
-            subtitle: `${allRest ? "Rest" : "Cardio"} · ${splits.length} splits on ${date}`,
+            rawName: displayTitle,
+            subtitle: `${rowStatus === "Rest" ? "Rest" : "Cardio"} · ${splits.length} splits`,
             details: [
               `${totalMins} min`,
               totalDist > 0 ? formatDistance(totalDist, unit) : null,
               weightedHr ? `${weightedHr} bpm` : null,
               `${totalKcal} kcal`,
-              `${splits.length} splits`,
             ]
               .filter(Boolean)
               .join(" · "),
             effortScore: dailyCardioScore,
-            status: allRest ? "Rest" : allScored ? "Scored" : "Calibrating",
+            status: rowStatus,
+            calibrationLabel: calLabel,
             kcal: totalKcal,
             addedLater: sorted.some((c) => c.addedLater),
             kcalIsEstimated: sorted.some((c) => c.kcalIsEstimated),
@@ -202,6 +241,7 @@ export function LogsTab({
             kind: "cardio",
             date: c.date,
             title: c.activityType,
+            rawName: c.activityType,
             subtitle: c.isRestActivity ? "Rest" : "Cardio",
             details: [
               `${c.minutes} min`,
@@ -213,6 +253,7 @@ export function LogsTab({
               .join(" · "),
             effortScore: c.effortScore,
             status: c.status,
+            calibrationLabel: calLabel,
             kcal: c.kcal,
             addedLater: c.addedLater,
             kcalIsEstimated: c.kcalIsEstimated,
@@ -229,49 +270,97 @@ export function LogsTab({
   }, [state.recentExerciseLogs, state.recentCardioLogs, unit]);
 
   const filtered = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
     return unifiedLogs.filter((row) => {
-      if (filter === "all") return true;
-      if (filter === "strength") return row.kind === "strength";
-      if (filter === "cardio") return row.kind === "cardio" && row.status !== "Rest";
-      if (filter === "calibrating") return row.status === "Calibrating";
-      if (filter === "rest") return row.status === "Rest";
-      if (filter === "backfilled") return row.addedLater;
+      if (filter === "strength" && row.kind !== "strength") return false;
+      if (filter === "cardio" && !(row.kind === "cardio" && row.status !== "Rest"))
+        return false;
+      if (filter === "calibrating" && row.status !== "Calibrating") return false;
+      if (filter === "rest" && row.status !== "Rest") return false;
+      if (filter === "backfilled" && !row.addedLater) return false;
+      if (q) {
+        return (
+          row.title.toLowerCase().includes(q) ||
+          row.subtitle.toLowerCase().includes(q) ||
+          row.details.toLowerCase().includes(q) ||
+          row.date.includes(q)
+        );
+      }
       return true;
     });
-  }, [unifiedLogs, filter]);
+  }, [unifiedLogs, filter, searchQuery]);
 
-  // Group chronologically by date
+  const visibleRows = useMemo(
+    () => filtered.slice(0, visibleLimit),
+    [filtered, visibleLimit]
+  );
+
   const groupedByDate = useMemo(() => {
     const map = new Map<string, UnifiedLogRow[]>();
-    for (const row of filtered.slice(0, 45)) {
+    for (const row of visibleRows) {
       const list = map.get(row.date) ?? [];
       list.push(row);
       map.set(row.date, list);
     }
     return [...map.entries()];
-  }, [filtered]);
+  }, [visibleRows]);
 
   const totalSetsMonth = state.recentExerciseLogs
     .filter((e) => e.date.startsWith(state.monthStats.monthPrefix))
     .reduce((acc, e) => acc + e.sets.length, 0);
 
-  const handleDelete = async (row: UnifiedLogRow) => {
+  const handleDeleteRow = async (row: UnifiedLogRow) => {
     setDeletingId(row.id);
     try {
       if (row.splits && row.splits.length > 0) {
-        let anyDeleted = false;
+        const removedCardio: CardioLog[] = [];
         for (const s of row.splits) {
           const res = await apiDeleteLog("cardio", s.id);
-          if (res.ok) anyDeleted = true;
+          if (res.ok && res.deletedCardio) {
+            removedCardio.push(res.deletedCardio);
+          }
         }
-        if (anyDeleted) {
-          onDeleted(`Removed ${row.title}`);
+        if (removedCardio.length > 0) {
+          onDeleted(`Removed ${row.title}`, () => {
+            void apiRestoreDeletedLogs({ cardioLogs: removedCardio }).then(() => {
+              onToast(`Restored ${row.title}`);
+              onRefresh();
+            });
+          });
         }
       } else {
         const res = await apiDeleteLog(row.kind, row.id);
         if (res.ok) {
-          onDeleted(`Removed ${row.title}`);
+          const strengthSnap = res.deletedStrength ? [res.deletedStrength] : undefined;
+          const cardioSnap = res.deletedCardio ? [res.deletedCardio] : undefined;
+          onDeleted(`Removed ${row.title}`, () => {
+            void apiRestoreDeletedLogs({
+              strengthLogs: strengthSnap,
+              cardioLogs: cardioSnap,
+            }).then(() => {
+              onToast(`Restored ${row.title}`);
+              onRefresh();
+            });
+          });
         }
+      }
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleDeleteSingleSplit = async (splitId: string, splitNum: number, title: string) => {
+    setDeletingId(splitId);
+    try {
+      const res = await apiDeleteLog("cardio", splitId);
+      if (res.ok && res.deletedCardio) {
+        const snap = res.deletedCardio;
+        onDeleted(`Removed ${title} Split ${splitNum}`, () => {
+          void apiRestoreDeletedLogs({ cardioLogs: [snap] }).then(() => {
+            onToast(`Restored ${title} Split ${splitNum}`);
+            onRefresh();
+          });
+        });
       }
     } finally {
       setDeletingId(null);
@@ -338,6 +427,31 @@ export function LogsTab({
         </div>
       </div>
 
+      {/* Instant Search Bar */}
+      <div className="relative flex items-center">
+        <Search className="w-4 h-4 text-[#86868b] absolute left-3.5 pointer-events-none" />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => {
+            setSearchQuery(e.target.value);
+            setVisibleLimit(45);
+          }}
+          placeholder="Search exercise, muscle group, or date..."
+          className="w-full h-10 pl-10 pr-9 rounded-2xl bg-[#0a0a0c] border border-white/[0.08] text-white text-[13px] placeholder:text-[#525257] focus:outline-none focus:border-[#10e760]"
+        />
+        {searchQuery && (
+          <button
+            type="button"
+            aria-label="Clear search"
+            onClick={() => setSearchQuery("")}
+            className="absolute right-2.5 w-6 h-6 rounded-full hover:bg-white/[0.08] flex items-center justify-center text-[#86868b] hover:text-white cursor-pointer"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
+
       {/* Clean Scrollbar-Free Filter Chips */}
       <div className="flex gap-2 overflow-x-auto no-scrollbar pb-0.5">
         {chips.map((c) => {
@@ -346,7 +460,10 @@ export function LogsTab({
             <button
               key={c.key}
               type="button"
-              onClick={() => setFilter(c.key)}
+              onClick={() => {
+                setFilter(c.key);
+                setVisibleLimit(45);
+              }}
               className={`shrink-0 px-3.5 py-1.5 rounded-full text-[13px] font-medium transition-colors cursor-pointer border ${
                 active
                   ? "bg-white text-black border-white"
@@ -408,9 +525,9 @@ export function LogsTab({
                   {items.map((row) => (
                     <div
                       key={row.id}
-                      className="py-2.5 first:pt-0 last:pb-0 flex items-center justify-between gap-3"
+                      className="py-2.5 first:pt-0 last:pb-0 flex items-center justify-between gap-2.5"
                     >
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="text-[14px] font-medium text-[#f5f5f7]">
                             {row.title}
@@ -422,7 +539,9 @@ export function LogsTab({
                             <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-400/15 text-amber-300 border border-amber-400/30 font-semibold tracking-wide flex items-center gap-1">
                               <span>★ PR</span>
                               {row.prDetails && (
-                                <span className="font-normal opacity-85 text-[9px]">{row.prDetails}</span>
+                                <span className="font-normal opacity-85 text-[9px]">
+                                  {row.prDetails}
+                                </span>
                               )}
                             </span>
                           )}
@@ -442,42 +561,72 @@ export function LogsTab({
                           {formatLogTime(row.createdAt) ? ` · ${formatLogTime(row.createdAt)}` : ""}
                         </div>
                         {row.splits && row.splits.length > 1 && (
-                          <div className="mt-1.5 pl-2 border-l border-white/15 space-y-0.5">
+                          <div className="mt-2 pl-2.5 border-l border-white/15 space-y-1">
                             {row.splits.map((s) => (
                               <div
                                 key={s.id}
-                                className="flex items-center flex-wrap gap-x-1.5 gap-y-0.5 text-[11px] text-[#86868b] tabular-nums leading-tight"
+                                className="flex items-center justify-between gap-2 text-[11px] text-[#86868b] tabular-nums leading-tight"
                               >
-                                <span className="font-semibold text-white/90 whitespace-nowrap shrink-0">
-                                  Split {s.splitNumber}:
-                                </span>
-                                <span className="whitespace-nowrap">{s.minutes}m</span>
-                                {s.distanceKm && (
-                                  <span className="whitespace-nowrap">· {formatDistance(s.distanceKm, unit)}</span>
-                                )}
-                                <span className="whitespace-nowrap">· {s.kcal}kcal</span>
-                                {formatLogTime(s.createdAt) && (
-                                  <span className="whitespace-nowrap opacity-75">
-                                    · {formatLogTime(s.createdAt)}
+                                <div className="flex items-center flex-wrap gap-x-1.5 gap-y-0.5">
+                                  <span className="font-semibold text-white/90 whitespace-nowrap shrink-0">
+                                    Split {s.splitNumber}:
                                   </span>
-                                )}
+                                  <span className="whitespace-nowrap">{s.minutes}m</span>
+                                  {s.distanceKm && (
+                                    <span className="whitespace-nowrap">
+                                      · {formatDistance(s.distanceKm, unit)}
+                                    </span>
+                                  )}
+                                  <span className="whitespace-nowrap">· {s.kcal}kcal</span>
+                                  {formatLogTime(s.createdAt) && (
+                                    <span className="whitespace-nowrap opacity-75">
+                                      · {formatLogTime(s.createdAt)}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <button
+                                    type="button"
+                                    aria-label={`Edit split ${s.splitNumber}`}
+                                    onClick={() => {
+                                      const found = state.recentCardioLogs.find(
+                                        (c) => c.id === s.id
+                                      );
+                                      if (found) onEditCardio(found);
+                                    }}
+                                    className="w-6 h-6 rounded-md flex items-center justify-center text-[#6e6e73] hover:text-white hover:bg-white/[0.06] cursor-pointer"
+                                  >
+                                    <Pencil className="w-3 h-3" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    aria-label={`Delete split ${s.splitNumber}`}
+                                    disabled={deletingId === s.id}
+                                    onClick={() =>
+                                      handleDeleteSingleSplit(s.id, s.splitNumber, row.rawName)
+                                    }
+                                    className="w-6 h-6 rounded-md flex items-center justify-center text-[#6e6e73] hover:text-red-400 hover:bg-white/[0.06] cursor-pointer"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                </div>
                               </div>
                             ))}
                           </div>
                         )}
                       </div>
 
-                      <div className="flex items-center gap-2.5 shrink-0">
+                      <div className="flex items-center gap-1 shrink-0">
                         {row.status === "Calibrating" ? (
-                          <span className="text-[11px] font-medium text-amber-400">
-                            Calibrating
+                          <span className="text-[11px] font-medium text-amber-400 tabular-nums pr-1">
+                            {row.calibrationLabel || "Calibrating"}
                           </span>
                         ) : row.status === "Rest" ? (
-                          <span className="text-[11px] font-medium text-[#86868b]">
+                          <span className="text-[11px] font-medium text-[#86868b] pr-1">
                             Rest
                           </span>
                         ) : (
-                          <span className="text-[15px] font-semibold text-[#10e760] tabular-nums">
+                          <span className="text-[15px] font-semibold text-[#10e760] tabular-nums pr-1">
                             {row.effortScore}
                           </span>
                         )}
@@ -497,7 +646,7 @@ export function LogsTab({
                             }
                           }}
                           aria-label={`Edit ${row.title}`}
-                          className="w-7 h-7 rounded-lg flex items-center justify-center text-[#525257] hover:text-white hover:bg-white/[0.05] transition-colors cursor-pointer"
+                          className="w-9 h-9 rounded-xl flex items-center justify-center text-[#6e6e73] hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
                         >
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
@@ -505,9 +654,9 @@ export function LogsTab({
                         <button
                           type="button"
                           disabled={deletingId === row.id}
-                          onClick={() => handleDelete(row)}
+                          onClick={() => handleDeleteRow(row)}
                           aria-label={`Delete ${row.title}`}
-                          className="w-7 h-7 rounded-lg flex items-center justify-center text-[#525257] hover:text-red-400 hover:bg-white/[0.05] transition-colors cursor-pointer"
+                          className="w-9 h-9 rounded-xl flex items-center justify-center text-[#6e6e73] hover:text-red-400 hover:bg-white/[0.06] transition-colors cursor-pointer"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -518,10 +667,20 @@ export function LogsTab({
               </div>
             );
           })}
+
+          {filtered.length > visibleLimit && (
+            <button
+              type="button"
+              onClick={() => setVisibleLimit((prev) => prev + 45)}
+              className="w-full h-11 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-[13px] font-medium text-white transition-colors cursor-pointer"
+            >
+              Show older logs ({filtered.length - visibleLimit} remaining)
+            </button>
+          )}
         </div>
       )}
 
-      {/* Backfill Type Selector Sheet (FR-34) */}
+      {/* Backfill Type Selector Sheet */}
       <BottomSheet
         open={backfillPickerOpen}
         onClose={() => setBackfillPickerOpen(false)}
@@ -538,7 +697,7 @@ export function LogsTab({
             className="p-4 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-left cursor-pointer"
           >
             <div className="text-[15px] font-semibold text-white">Strength</div>
-            <div className="text-[12px] text-[#86868b] mt-0.5">Sets & reps</div>
+            <div className="text-[12px] text-[#86868b] mt-0.5">Sets &amp; reps</div>
           </button>
           <button
             type="button"
@@ -549,7 +708,7 @@ export function LogsTab({
             className="p-4 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-left cursor-pointer"
           >
             <div className="text-[15px] font-semibold text-white">Cardio</div>
-            <div className="text-[12px] text-[#86868b] mt-0.5">Text or photo</div>
+            <div className="text-[12px] text-[#86868b] mt-0.5">Preset, text or photo</div>
           </button>
         </div>
       </BottomSheet>

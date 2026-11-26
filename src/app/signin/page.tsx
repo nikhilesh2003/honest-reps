@@ -1,7 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Activity, Camera, ShieldCheck } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+
+const PREVIEW_DAYS = [
+  { day: "M", score: 48, pct: 48, color: "var(--effort-very-low)", text: "text-[#bbf7d0]" },
+  { day: "T", score: 62, pct: 62, color: "var(--effort-low)", text: "text-black" },
+  { day: "W", score: null, pct: 0, color: "transparent", text: "text-[#525257]", rest: true },
+  { day: "T", score: 54, pct: 54, color: "var(--effort-low)", text: "text-black" },
+  { day: "F", score: 72, pct: 72, color: "var(--effort-steady)", text: "text-black" },
+  { day: "S", score: 81, pct: 81, color: "var(--effort-high)", text: "text-black" },
+  { day: "S", score: 88, pct: 88, color: "var(--effort-very-high)", text: "text-black", today: true },
+];
 
 // FR-1: Google sign-in ONLY. No passwords, no email/password fields, no default demo login.
 export default function SignInPage() {
@@ -44,9 +55,9 @@ export default function SignInPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center px-6 py-12">
-      <div className="w-full max-w-sm space-y-8 text-center">
-        <div className="space-y-4">
+    <div className="min-h-screen bg-black flex flex-col items-center justify-center px-5 py-10 pt-safe pb-safe">
+      <div className="w-full max-w-sm space-y-6 text-center">
+        <div className="space-y-3">
           <div className="brand-icon-box w-20 h-20 mx-auto rounded-[22px] p-2.5 flex items-center justify-center">
             <img
               src="/icons/logo-icon.png"
@@ -54,18 +65,20 @@ export default function SignInPage() {
               className="w-full h-full object-contain"
             />
           </div>
-          <div className="brand-icon-box inline-flex px-4 py-2 rounded-2xl mx-auto">
+          <div className="brand-icon-box inline-flex px-4 py-1.5 rounded-2xl mx-auto">
             <img
               src="/icons/logo-wordmark.png"
               alt="honestreps.com"
               className="h-7 object-contain"
             />
           </div>
-          <p className="text-[14px] text-[#86868b] leading-relaxed">
-            Honest effort compared only against your own history.
+          <p className="text-[14px] text-[#86868b] leading-relaxed max-w-[300px] mx-auto">
+            Strength and cardio effort scored strictly against your own history.{" "}
+            <span className="text-white font-medium">50 means your usual.</span>
           </p>
         </div>
 
+        {/* Sign-in CTA Card */}
         <div className="apple-card p-5 space-y-3">
           <button
             type="button"
@@ -99,6 +112,90 @@ export default function SignInPage() {
               {errorMsg}
             </p>
           )}
+        </div>
+
+        {/* Compact Apple-Minimal Product Preview */}
+        <div className="apple-card p-4 text-left space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
+                How It Works
+              </div>
+              <div className="text-[14px] font-semibold text-white mt-0.5">
+                Relative Effort · Fair Leaderboards
+              </div>
+            </div>
+            <span className="px-2.5 py-1 rounded-full bg-[#10e760]/12 border border-[#10e760]/30 text-[11px] font-bold text-[#10e760] tabular-nums">
+              88 / 100
+            </span>
+          </div>
+
+          {/* Visual 7-Day Preview Strip */}
+          <div className="relative pt-1">
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute left-0 right-0 border-t border-dashed border-white/15"
+              style={{ top: "48px" }}
+            />
+            <div className="grid grid-cols-7 gap-1.5 relative z-10">
+              {PREVIEW_DAYS.map((d, idx) => (
+                <div key={idx} className="flex flex-col items-center gap-1">
+                  <span
+                    className={`text-[10px] font-semibold ${
+                      d.today ? "text-[#10e760]" : "text-[#86868b]"
+                    }`}
+                  >
+                    {d.day}
+                  </span>
+                  <div
+                    className={`w-full h-[64px] rounded-[9px] p-[2px] flex flex-col justify-end bg-[#050506] border ${
+                      d.today
+                        ? "border-[#10e760]/60"
+                        : d.rest
+                        ? "border-dashed border-white/15"
+                        : "border-white/[0.08]"
+                    }`}
+                  >
+                    {d.score !== null ? (
+                      <div
+                        className="w-full rounded-[6px] flex items-start justify-center pt-1"
+                        style={{ height: `${d.pct}%`, backgroundColor: d.color }}
+                      >
+                        <span className={`text-[9px] font-bold tabular-nums leading-none ${d.text}`}>
+                          {d.score}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="h-full flex items-end justify-center pb-1.5">
+                        <span className="text-[8px] text-[#525257]">Rest</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2.5 pt-1 border-t border-white/[0.06] text-[12px]">
+            <div className="flex items-start gap-2.5">
+              <Activity className="w-4 h-4 text-[#10e760] shrink-0 mt-0.5" />
+              <span className="text-[#a1a1a6] leading-snug">
+                <strong className="text-white font-medium">50 = Your Usual:</strong> Compare fairly with gym buddies regardless of starting strength.
+              </span>
+            </div>
+            <div className="flex items-start gap-2.5">
+              <Camera className="w-4 h-4 text-[#10e760] shrink-0 mt-0.5" />
+              <span className="text-[#a1a1a6] leading-snug">
+                <strong className="text-white font-medium">2-Tap Sets &amp; Cardio OCR:</strong> Pre-filled weights, rest timer, PR tracking, and treadmill photo parsing.
+              </span>
+            </div>
+            <div className="flex items-start gap-2.5">
+              <ShieldCheck className="w-4 h-4 text-[#10e760] shrink-0 mt-0.5" />
+              <span className="text-[#a1a1a6] leading-snug">
+                <strong className="text-white font-medium">Privacy by Default:</strong> Bodyweight stays private; exercise weights only share if you opt in.
+              </span>
+            </div>
+          </div>
         </div>
 
         <div className="text-[11px] text-[#525257]">Developed by Ifleon</div>

@@ -11,6 +11,7 @@ import {
   daysBetweenIso,
   DEFAULT_GRID_THRESHOLDS,
   estimateCardioCalories,
+  estimateOneRepMax,
   formatDistance,
   formatFullDate,
   formatLocalIsoDate,
@@ -1308,6 +1309,7 @@ export async function apiGetState(
       date: string;
       shortDate: string;
       maxWeightKg: number;
+      best1RMKg: number;
       totalVolume: number;
       totalReps: number;
       effortScore: number | null;
@@ -1323,11 +1325,21 @@ export async function apiGetState(
         ? Math.min(...nonZeroSets.map((s) => s.weightKg))
         : 0
       : Math.max(...log.sets.map((s) => s.weightKg), 0);
+    const set1RMs = log.sets
+      .map((s) => estimateOneRepMax(s.weightKg, s.reps, log.exerciseName))
+      .filter((v) => v > 0);
+    const sessionBest1RM =
+      set1RMs.length === 0
+        ? 0
+        : isAssisted
+        ? Math.min(...set1RMs)
+        : Math.max(...set1RMs);
 
     arr.push({
       date: log.date,
       shortDate: formatShortMonthDay(log.date),
       maxWeightKg: sessionBestWeight,
+      best1RMKg: sessionBest1RM,
       totalVolume: log.work,
       totalReps: log.sets.reduce((acc, s) => acc + s.reps, 0),
       effortScore: log.effortScore,
@@ -1337,7 +1349,7 @@ export async function apiGetState(
   }
   const strengthProgression: AppStatePayload["strengthProgression"] = {};
   for (const [k, v] of progressionMap.entries()) {
-    strengthProgression[k] = v.slice(-6);
+    strengthProgression[k] = v.slice(-8);
   }
 
   // Strength progression grouped by Muscle Group (sum of volume & max weight per session date)
@@ -1511,8 +1523,8 @@ export async function apiGetState(
     visibleExercises,
     allAccessibleExercises,
     hiddenExerciseIds: [...hiddenIds],
-    recentExerciseLogs: userExerciseLogs.slice(0, 60),
-    recentCardioLogs: userCardioLogs.slice(0, 60),
+    recentExerciseLogs: userExerciseLogs.slice(0, 365),
+    recentCardioLogs: userCardioLogs.slice(0, 365),
     strengthProgression,
     muscleGroupProgression,
     cardioTotals,
@@ -1941,7 +1953,7 @@ export async function apiUpdateStrengthLog(
     date?: string;
     exerciseName: string;
     muscleGroup: string;
-    sets: Array<{ weight: number; reps: number }>;
+    sets: Array<{ weight: number; reps: number; restSeconds?: number }>;
     optionalMinutes?: number;
     rir?: number | null;
   }
@@ -1955,6 +1967,7 @@ export async function apiUpdateStrengthLog(
 
   const todayIso = getTodayIso();
   const prevDate = target.date;
+  const prevExerciseName = target.exerciseName;
   const nextDate = body.date || prevDate;
   if (nextDate !== prevDate) {
     const diffDays = daysBetweenIso(nextDate, todayIso);
@@ -1968,8 +1981,19 @@ export async function apiUpdateStrengthLog(
     target.addedLater = diffDays > 0;
   }
 
+  if (body.exerciseName && body.exerciseName.trim()) {
+    target.exerciseName = body.exerciseName.trim();
+  }
+  if (body.muscleGroup && body.muscleGroup.trim()) {
+    target.muscleGroup = body.muscleGroup.trim();
+  }
+
   const updatedSets: ExerciseSet[] = body.sets.map((s, idx) => {
-    const existingRest = target.sets[idx]?.restSeconds;
+    const suppliedRest =
+      typeof s.restSeconds === "number" && s.restSeconds > 0
+        ? Math.round(s.restSeconds)
+        : undefined;
+    const existingRest = suppliedRest ?? target.sets[idx]?.restSeconds;
     return {
       setNumber: idx + 1,
       weightKg: Math.max(0, convertWeightToKg(Number(s.weight) || 0, user.weightUnit)),
@@ -2011,6 +2035,9 @@ export async function apiUpdateStrengthLog(
     targetSession.muscleGroups.push(target.muscleGroup);
   }
 
+  if (prevExerciseName.toLowerCase() !== target.exerciseName.toLowerCase()) {
+    recalculateUserScores(state, user.userId, prevExerciseName, undefined);
+  }
   recalculateUserScores(state, user.userId, target.exerciseName, undefined);
   saveDb(state);
   if (prevDate !== target.date) {
@@ -2121,25 +2148,39 @@ export async function apiUpdateCardioLog(
   return { ok: true, entry: target };
 }
 
-export async function apiDeleteLog(kind: "strength" | "cardio", id: string) {
+export async function apiDeleteLog(
+  kind: "strength" | "cardio",
+  id: string
+): Promise<{
+  ok: boolean;
+  deletedStrength?: ExerciseLog;
+  deletedCardio?: CardioLog;
+}> {
   const state = loadDb();
   const user = state.profiles.find((p) => p.userId === state.currentUserId);
   if (!user) return { ok: false };
 
   let affectedDate: string | null = null;
+  let deletedStrength: ExerciseLog | undefined;
+  let deletedCardio: CardioLog | undefined;
   if (kind === "strength") {
     const idx = state.exerciseLogs.findIndex((e) => e.id === id && e.userId === user.userId);
     if (idx >= 0) {
-      affectedDate = state.exerciseLogs[idx].date;
-      const name = state.exerciseLogs[idx].exerciseName;
+      deletedStrength = {
+        ...state.exerciseLogs[idx],
+        sets: state.exerciseLogs[idx].sets.map((s) => ({ ...s })),
+      };
+      affectedDate = deletedStrength.date;
+      const name = deletedStrength.exerciseName;
       state.exerciseLogs.splice(idx, 1);
       recalculateUserScores(state, user.userId, name, undefined);
     }
   } else {
     const idx = state.cardioLogs.findIndex((c) => c.id === id && c.userId === user.userId);
     if (idx >= 0) {
-      affectedDate = state.cardioLogs[idx].date;
-      const act = state.cardioLogs[idx].activityType;
+      deletedCardio = { ...state.cardioLogs[idx] };
+      affectedDate = deletedCardio.date;
+      const act = deletedCardio.activityType;
       state.cardioLogs.splice(idx, 1);
       recalculateUserScores(state, user.userId, undefined, act);
     }
@@ -2150,6 +2191,81 @@ export async function apiDeleteLog(kind: "strength" | "cardio", id: string) {
       syncExercises: kind === "strength",
       syncCardio: kind === "cardio",
       allowEmptyDelete: true,
+    });
+  }
+  return { ok: true, deletedStrength, deletedCardio };
+}
+
+export async function apiRestoreDeletedLogs(params: {
+  strengthLogs?: ExerciseLog[];
+  cardioLogs?: CardioLog[];
+}) {
+  const state = loadDb();
+  const user = state.profiles.find((p) => p.userId === state.currentUserId);
+  if (!user) return { ok: false, error: "Unauthorized" };
+
+  const exDates = new Set<string>();
+  const cardioDates = new Set<string>();
+  const exNames = new Set<string>();
+  const cardioActs = new Set<string>();
+
+  for (const ex of params.strengthLogs || []) {
+    if (ex.userId !== user.userId) continue;
+    if (!state.exerciseLogs.some((e) => e.id === ex.id)) {
+      state.exerciseLogs.push({ ...ex, sets: ex.sets.map((s) => ({ ...s })) });
+      exDates.add(ex.date);
+      exNames.add(ex.exerciseName);
+      const sess = state.sessions.find((s) => s.userId === user.userId && s.date === ex.date);
+      if (!sess) {
+        state.sessions.push({
+          id: uid("ses"),
+          userId: user.userId,
+          date: ex.date,
+          muscleGroups: [ex.muscleGroup],
+          isRest: false,
+          createdAt: new Date().toISOString(),
+        });
+      } else if (!sess.isRest && !sess.muscleGroups.includes(ex.muscleGroup)) {
+        sess.muscleGroups.push(ex.muscleGroup);
+      }
+    }
+  }
+
+  for (const c of params.cardioLogs || []) {
+    if (c.userId !== user.userId) continue;
+    if (!state.cardioLogs.some((existing) => existing.id === c.id)) {
+      state.cardioLogs.push({ ...c });
+      cardioDates.add(c.date);
+      cardioActs.add(c.activityType);
+      const sess = state.sessions.find((s) => s.userId === user.userId && s.date === c.date);
+      if (!sess) {
+        state.sessions.push({
+          id: uid("ses"),
+          userId: user.userId,
+          date: c.date,
+          muscleGroups: c.isRestActivity ? [] : ["Cardio"],
+          isRest: c.isRestActivity,
+          createdAt: new Date().toISOString(),
+        });
+      } else if (!sess.isRest && !sess.muscleGroups.includes("Cardio")) {
+        sess.muscleGroups.push("Cardio");
+      }
+    }
+  }
+
+  for (const name of exNames) {
+    recalculateUserScores(state, user.userId, name, undefined);
+  }
+  for (const act of cardioActs) {
+    recalculateUserScores(state, user.userId, undefined, act);
+  }
+  saveDb(state);
+
+  const allDates = new Set([...exDates, ...cardioDates]);
+  for (const dt of allDates) {
+    void syncDayToSupabase(user.userId, dt, {
+      syncExercises: exDates.has(dt),
+      syncCardio: cardioDates.has(dt),
     });
   }
   return { ok: true };
@@ -2462,6 +2578,72 @@ export async function apiLogWeight(weightValue: number) {
       // Non-blocking sync
     }
   })();
+  return { ok: true };
+}
+
+export async function apiUpdateWeightLog(weightLogId: string, weightValue: number) {
+  const state = loadDb();
+  const user = state.profiles.find((p) => p.userId === state.currentUserId);
+  if (!user) return { ok: false, error: "Unauthorized" };
+  if (Number.isNaN(weightValue) || weightValue < 20 || weightValue > 500) {
+    return { ok: false, error: "Enter a valid weight." };
+  }
+  const target = state.weightLogs.find(
+    (w) => w.id === weightLogId && w.userId === user.userId
+  );
+  if (!target) return { ok: false, error: "Weight entry not found." };
+
+  const weightKg = convertWeightToKg(weightValue, user.weightUnit);
+  target.weightKg = weightKg;
+  saveDb(state);
+
+  void (async () => {
+    try {
+      const sb = createSupabaseBrowserClient();
+      if (sb) {
+        await sb
+          .from("weight_logs")
+          .update({ weight_kg: weightKg })
+          .eq("user_id", user.userId)
+          .eq("log_date", target.date);
+      }
+    } catch {
+      // Non-blocking
+    }
+  })();
+
+  return { ok: true };
+}
+
+export async function apiDeleteWeightLog(weightLogId: string) {
+  const state = loadDb();
+  const user = state.profiles.find((p) => p.userId === state.currentUserId);
+  if (!user) return { ok: false, error: "Unauthorized" };
+
+  const idx = state.weightLogs.findIndex(
+    (w) => w.id === weightLogId && w.userId === user.userId
+  );
+  if (idx < 0) return { ok: false, error: "Weight entry not found." };
+
+  const removed = state.weightLogs[idx];
+  state.weightLogs.splice(idx, 1);
+  saveDb(state);
+
+  void (async () => {
+    try {
+      const sb = createSupabaseBrowserClient();
+      if (sb) {
+        await sb
+          .from("weight_logs")
+          .delete()
+          .eq("user_id", user.userId)
+          .eq("log_date", removed.date);
+      }
+    } catch {
+      // Non-blocking
+    }
+  })();
+
   return { ok: true };
 }
 
@@ -2948,6 +3130,52 @@ export async function apiRemoveFriend(friendUserId: string) {
   } catch {
     // Non-blocking
   }
+
+  return { ok: true };
+}
+
+export async function apiSendFriendNudge(
+  friendUserId: string,
+  friendUsername: string,
+  kind: "fistbump" | "spot" = "fistbump"
+): Promise<{ ok: boolean; error?: string }> {
+  const state = loadDb();
+  const user = state.profiles.find((p) => p.userId === state.currentUserId);
+  if (!user) return { ok: false, error: "Unauthorized" };
+
+  const isConnected = state.friendships.some(
+    (f) =>
+      f.status === "accepted" &&
+      ((f.userId === user.userId && f.friendId === friendUserId) ||
+        (f.userId === friendUserId && f.friendId === user.userId))
+  );
+  if (!isConnected) {
+    return { ok: false, error: "Connect as friends first." };
+  }
+
+  const cdKey = `hr_nudge_cd_${user.userId}_${friendUserId}`;
+  if (typeof window !== "undefined") {
+    try {
+      const lastSent = Number(window.localStorage.getItem(cdKey) || 0);
+      if (lastSent > 0 && Date.now() - lastSent < 60_000) {
+        return { ok: false, error: "Already sent a bump recently." };
+      }
+      window.localStorage.setItem(cdKey, String(Date.now()));
+    } catch {
+      // Ignore storage quota
+    }
+  }
+
+  void dispatchServerPush({
+    action: "friend_nudge",
+    targetUserId: friendUserId,
+    title: `Honest Reps · @${user.username}`,
+    body:
+      kind === "spot"
+        ? `${user.name.split(" ")[0]} sent a gym check-in salute.`
+        : `${user.name.split(" ")[0]} sent a fist bump for your session.`,
+    url: "/?tab=friends",
+  });
 
   return { ok: true };
 }
