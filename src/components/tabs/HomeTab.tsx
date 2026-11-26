@@ -371,11 +371,13 @@ export function HomeTab({
       </div>
 
       {/* Hero Effort Card + 7-Day Rolling Bars */}
-      <div className="apple-card p-5 space-y-5 relative overflow-hidden">
+      <div className="apple-card p-5 space-y-5 relative">
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute -top-16 -left-16 w-56 h-56 rounded-full bg-[#30d158]/12 blur-3xl"
-        />
+          className="pointer-events-none absolute inset-0 rounded-[20px] overflow-hidden"
+        >
+          <div className="absolute -top-16 -left-16 w-56 h-56 rounded-full bg-[#30d158]/12 blur-3xl" />
+        </div>
         <div className="relative flex items-start justify-between gap-3">
           <div>
             <div className="apple-section-label">Effort</div>
@@ -512,15 +514,15 @@ export function HomeTab({
 
                 const trackGlowClass = isToday
                   ? isCal
-                    ? "ring-1 ring-amber-400/80 shadow-[0_0_22px_rgba(255,159,10,0.4)]"
-                    : "ring-1 ring-[#30d158]/80 shadow-[0_0_22px_rgba(48,209,88,0.42)]"
+                    ? "ring-1 ring-amber-400/80 shadow-[0_0_22px_rgba(255,159,10,0.42)]"
+                    : "ring-1 ring-[#30d158]/80 shadow-[0_0_22px_rgba(48,209,88,0.45)]"
                   : isScored
-                  ? "ring-1 ring-[#30d158]/45 shadow-[0_0_16px_rgba(48,209,88,0.28)]"
+                  ? "ring-1 ring-[#30d158]/55 shadow-[0_0_18px_rgba(48,209,88,0.34)]"
                   : isCal
-                  ? "ring-1 ring-amber-400/45 shadow-[0_0_16px_rgba(255,159,10,0.28)]"
+                  ? "ring-1 ring-amber-400/55 shadow-[0_0_18px_rgba(255,159,10,0.34)]"
                   : day.isRest
-                  ? "border border-dashed border-white/15"
-                  : "border border-white/[0.06]";
+                  ? "ring-1 ring-[#30d158]/30 shadow-[0_0_14px_rgba(48,209,88,0.18)]"
+                  : "ring-1 ring-[#30d158]/22 shadow-[0_0_12px_rgba(48,209,88,0.14)]";
 
                 return (
                   <div key={day.date} className="flex flex-col items-center gap-1.5">
@@ -534,7 +536,7 @@ export function HomeTab({
                           ? "text-[#30d158]/90 glow-score"
                           : isCal
                           ? "text-amber-400/90 glow-amber"
-                          : "text-[#86868b]"
+                          : "text-[#a1a1a6] glow-score"
                       }`}
                     >
                       {day.dayLetter}
