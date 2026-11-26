@@ -2,25 +2,25 @@
 
 :root {
   --bg-black: #000000;
-  --bg-card: #111113;
-  --bg-card-elevated: #1c1c1e;
-  --bg-sheet: #141416;
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-strong: rgba(255, 255, 255, 0.12);
+  --bg-card: #040405;
+  --bg-card-elevated: #09090b;
+  --bg-sheet: #050507;
+  --border-subtle: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.14);
   --text-primary: #f5f5f7;
   --text-secondary: #86868b;
-  --text-muted: #636366;
+  --text-muted: #525257;
 
-  /* Matte Green Contribution Ramp (Dark Mode — Apple Fitness inspired) */
-  --effort-nolog: #1c1c1e;
-  --effort-nolog-border: rgba(255, 255, 255, 0.03);
+  /* Matte Green Contribution Ramp (Pitch Black OLED Dark Mode) */
+  --effort-nolog: #0b0b0e;
+  --effort-nolog-border: rgba(255, 255, 255, 0.05);
   --effort-very-low: #103820;
   --effort-low: #175c31;
   --effort-steady: #228b46;
   --effort-high: #2ab356;
   --effort-very-high: #30d158;
   --effort-calibrating: #d97706;
-  --effort-rest: #2c2c2e;
+  --effort-rest: #141418;
 
   /* 5-Step Warm Amber Ramp for Estimated (Calibrating) Efforts */
   --est-very-low: #3b1d06;
@@ -229,12 +229,12 @@ html[data-theme="light"] .apple-segmented {
   color: var(--text-primary);
 }
 .apple-segmented-btn[data-active="true"] {
-  background-color: #323236;
+  background-color: #161619;
   color: #ffffff;
   font-weight: 600;
   box-shadow:
-    0 0 14px rgba(48, 209, 88, 0.22),
-    0 1px 3px rgba(0, 0, 0, 0.32);
+    0 0 14px rgba(48, 209, 88, 0.24),
+    0 1px 3px rgba(0, 0, 0, 0.45);
 }
 html[data-theme="light"] .apple-segmented-btn[data-active="true"] {
   background-color: #ffffff;
@@ -242,6 +242,23 @@ html[data-theme="light"] .apple-segmented-btn[data-active="true"] {
   box-shadow:
     0 2px 10px rgba(22, 163, 74, 0.14),
     0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Pure Pitch-Black OLED Dark Mode Surface Enforcement (eliminates all grey card/track fills) */
+html:not([data-theme="light"]) .bg-\[\#111113\] {
+  background-color: #040405 !important;
+}
+html:not([data-theme="light"]) .bg-\[\#141416\] {
+  background-color: #050507 !important;
+}
+html:not([data-theme="light"]) .bg-\[\#1c1c1e\] {
+  background-color: #08080a !important;
+}
+html:not([data-theme="light"]) .bg-\[\#1c1c1e\]\/95 {
+  background-color: rgba(6, 6, 8, 0.96) !important;
+}
+html:not([data-theme="light"]) .bg-\[\#2c2c2e\] {
+  background-color: #101014 !important;
 }
 
 /* Luminous Effort Tile States */

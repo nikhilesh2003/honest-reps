@@ -47,9 +47,9 @@ function renderSummaryCanvas(state: AppStatePayload): string {
   ctx.fillStyle = glow;
   ctx.fillRect(0, 0, W, H);
 
-  // Outer Luminous Surface Card
+  // Outer Luminous Pitch-Black Surface Card
   drawRoundedRect(ctx, 56, 56, W - 112, H - 112, 64);
-  ctx.fillStyle = "rgba(17, 17, 19, 0.92)";
+  ctx.fillStyle = "rgba(5, 5, 7, 0.96)";
   ctx.fill();
   ctx.lineWidth = 2.5;
   ctx.strokeStyle = "rgba(48, 209, 88, 0.28)";
@@ -82,7 +82,7 @@ function renderSummaryCanvas(state: AppStatePayload): string {
     : `${state.monthStats.monthPrefix} Monthly Effort`;
 
   drawRoundedRect(ctx, 124, 280, W - 248, 316, 44);
-  ctx.fillStyle = "#1c1c1e";
+  ctx.fillStyle = "#08080a";
   ctx.fill();
 
   ctx.fillStyle = "#86868b";
@@ -127,7 +127,7 @@ function renderSummaryCanvas(state: AppStatePayload): string {
     const isLast = idx === days.length - 1;
 
     drawRoundedRect(ctx, bx, barTop, barW, barH, 24);
-    ctx.fillStyle = "#1c1c1e";
+    ctx.fillStyle = "#08080a";
     ctx.fill();
 
     if (d.effortScore !== null) {
@@ -173,7 +173,7 @@ function renderSummaryCanvas(state: AppStatePayload): string {
     const tx = 124 + idx * (tileW + 16);
     const ty = 1020;
     drawRoundedRect(ctx, tx, ty, tileW, 144, 30);
-    ctx.fillStyle = "#1c1c1e";
+    ctx.fillStyle = "#08080a";
     ctx.fill();
 
     ctx.fillStyle = idx === 2 ? "#f5f5f7" : "#30d158";
