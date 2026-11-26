@@ -355,13 +355,13 @@ export function ProfileTab({
       {/* Unified 3-Figure Summary Card */}
       <div className="apple-card grid grid-cols-3 divide-x divide-white/[0.06] py-3.5">
         <div className="text-center px-1">
-          <div className="text-[22px] font-semibold text-[#30d158] tabular-nums">
+          <div className="text-[22px] font-semibold text-[#30d158] glow-score tabular-nums">
             {monthStats.activeDaysYear}
           </div>
           <div className="text-[11px] font-medium text-[#86868b] mt-0.5">Year Active</div>
         </div>
         <div className="text-center px-1">
-          <div className="text-[22px] font-semibold text-[#30d158] tabular-nums">
+          <div className="text-[22px] font-semibold text-[#30d158] glow-score tabular-nums">
             {monthStats.currentStreak}
           </div>
           <div className="text-[11px] font-medium text-[#86868b] mt-0.5">Streak</div>

@@ -37,16 +37,22 @@ function renderSummaryCanvas(state: AppStatePayload): string {
   canvas.height = H;
   const ctx = canvas.getContext("2d")!;
 
-  // Pure OLED Black Canvas (Zero neon glow — pure Apple Fitness minimalism)
+  // Pure OLED Black Canvas with Luminous Emerald Backdrop Glow
   ctx.fillStyle = "#000000";
   ctx.fillRect(0, 0, W, H);
 
-  // Outer Quiet Surface Card
+  const glow = ctx.createRadialGradient(W / 2, 390, 40, W / 2, 390, 560);
+  glow.addColorStop(0, "rgba(48, 209, 88, 0.24)");
+  glow.addColorStop(1, "rgba(0, 0, 0, 0)");
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, W, H);
+
+  // Outer Luminous Surface Card
   drawRoundedRect(ctx, 56, 56, W - 112, H - 112, 64);
-  ctx.fillStyle = "#111113";
+  ctx.fillStyle = "rgba(17, 17, 19, 0.92)";
   ctx.fill();
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = "rgba(255,255,255,0.08)";
+  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = "rgba(48, 209, 88, 0.28)";
   ctx.stroke();
 
   const fontStack =
@@ -83,10 +89,14 @@ function renderSummaryCanvas(state: AppStatePayload): string {
   ctx.font = `500 26px ${fontStack}`;
   ctx.fillText(heroLabel, 174, 344);
 
+  ctx.save();
+  ctx.shadowColor = "rgba(48, 209, 88, 0.55)";
+  ctx.shadowBlur = 32;
   ctx.fillStyle = "#30d158";
   ctx.font = `600 156px ${fontStack}`;
   const scoreStr = heroScore !== null ? String(heroScore) : "Cal";
   ctx.fillText(scoreStr, 168, 496);
+  ctx.restore();
 
   const scoreWidth = ctx.measureText(scoreStr).width;
   if (heroScore !== null) {

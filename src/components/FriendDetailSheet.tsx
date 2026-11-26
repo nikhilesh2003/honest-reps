@@ -109,8 +109,8 @@ export function FriendDetailSheet({
               <div className="px-4 py-3 flex items-center justify-between">
                 <span className="text-[#86868b]">Status</span>
                 {detail.friend.inGym ? (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#30d158]/15 text-[#30d158] text-[12px] font-medium">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#30d158]" />
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#30d158]/15 border border-[#30d158]/40 shadow-[0_0_16px_rgba(48,209,88,0.35)] text-[#30d158] text-[12px] font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#30d158] animate-ping" />
                     In the Gym
                   </span>
                 ) : (

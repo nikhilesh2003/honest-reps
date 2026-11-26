@@ -28,7 +28,13 @@ export function Toast({
         hasAction ? "pointer-events-auto" : "pointer-events-none"
       }`}
     >
-      <div className="flex items-center gap-2.5 bg-[#1c1c1e]/95 backdrop-blur-2xl border border-white/[0.08] rounded-full px-4 py-2.5 shadow-[0_8px_28px_rgba(0,0,0,0.45)]">
+      <div
+        className={`flex items-center gap-2.5 bg-[#1c1c1e]/95 backdrop-blur-2xl rounded-full px-4 py-2.5 border ${
+          toast.tone === "error"
+            ? "border-amber-400/35 shadow-[0_0_28px_rgba(251,191,36,0.25),0_8px_28px_rgba(0,0,0,0.5)]"
+            : "border-[#30d158]/35 shadow-[0_0_28px_rgba(48,209,88,0.28),0_8px_28px_rgba(0,0,0,0.5)]"
+        }`}
+      >
         {toast.tone === "error" ? (
           <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
         ) : (

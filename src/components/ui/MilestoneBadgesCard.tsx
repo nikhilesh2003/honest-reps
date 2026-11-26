@@ -700,7 +700,13 @@ export function MilestoneBadgesCard({
               onClick={() => openBadgeDetail(badge)}
               className="flex flex-col items-center text-center group cursor-pointer focus:outline-none"
             >
-              <div className="relative w-16 h-16 flex items-center justify-center">
+              <div
+                className={`relative w-16 h-16 flex items-center justify-center ${
+                  badge.isUnlocked
+                    ? "drop-shadow-[0_0_12px_rgba(48,209,88,0.35)]"
+                    : ""
+                }`}
+              >
                 {isPlate ? (
                   <div className="w-[58px] h-[58px] flex items-center justify-center transition-transform duration-200 group-hover:scale-105">
                     <BadgeVisualThumbnail badge={badge} size="md" />

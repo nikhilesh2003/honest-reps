@@ -29,7 +29,9 @@ export function ScoreReasonSheet({ reason, onClose }: ScoreReasonSheetProps) {
             </div>
             <div
               className={`text-[28px] font-semibold tracking-[-0.03em] tabular-nums leading-none ${
-                reason.isEstimated ? "text-amber-400" : "text-[#30d158]"
+                reason.isEstimated
+                  ? "text-amber-400 glow-amber"
+                  : "text-[#30d158] glow-score"
               }`}
             >
               {reason.scoreLabel}

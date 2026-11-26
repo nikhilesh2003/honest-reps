@@ -158,9 +158,9 @@ export function DailyCheckinSheet({
                 key={mg.id}
                 type="button"
                 onClick={() => toggleGroup(mg.name)}
-                className={`h-11 px-4 rounded-2xl flex items-center justify-between text-[14px] font-medium transition-colors cursor-pointer ${
+                className={`h-11 px-4 rounded-2xl flex items-center justify-between text-[14px] font-medium transition-all cursor-pointer ${
                   active
-                    ? "bg-[#30d158]/15 text-white ring-1 ring-[#30d158]/50"
+                    ? "bg-[#30d158]/15 text-white ring-1 ring-[#30d158]/60 shadow-[0_0_18px_rgba(48,209,88,0.28)]"
                     : "bg-[#1c1c1e] text-[#a1a1a6] hover:text-white"
                 }`}
               >

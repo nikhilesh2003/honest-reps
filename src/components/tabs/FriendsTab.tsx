@@ -364,7 +364,7 @@ export function FriendsTab({
                   <div
                     className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-[14px] font-semibold ${
                       entry.inGym
-                        ? "bg-[#30d158]/15 text-[#30d158] ring-1 ring-[#30d158]/50"
+                        ? "bg-[#30d158]/15 text-[#30d158] ring-1 ring-[#30d158]/60 shadow-[0_0_18px_rgba(48,209,88,0.42)]"
                         : "bg-[#1c1c1e] text-[#f5f5f7]"
                     }`}
                   >
@@ -436,7 +436,9 @@ export function FriendsTab({
                     >
                       <span
                         className={`text-[18px] font-semibold tabular-nums ${
-                          isEst ? "text-amber-400" : "text-[#30d158]"
+                          isEst
+                            ? "text-amber-400 glow-amber"
+                            : "text-[#30d158] glow-score"
                         }`}
                       >
                         {score}

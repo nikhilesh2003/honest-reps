@@ -54,8 +54,12 @@ export default function SignInPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center px-6 py-12 pt-safe pb-safe">
-      <div className="w-full max-w-[360px] space-y-8 text-center">
+    <div className="min-h-screen bg-black relative overflow-hidden flex flex-col items-center justify-center px-6 py-12 pt-safe pb-safe">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full bg-[#30d158]/15 blur-[90px]"
+      />
+      <div className="relative w-full max-w-[360px] space-y-8 text-center">
         {/* Hero */}
         <div className="space-y-3">
           <div className="brand-icon-box w-16 h-16 mx-auto rounded-[18px] p-2 flex items-center justify-center">
@@ -120,7 +124,7 @@ export default function SignInPage() {
               </div>
             </div>
             <div className="text-right tabular-nums">
-              <span className="text-[22px] font-semibold text-[#30d158]">88</span>
+              <span className="text-[22px] font-semibold text-[#30d158] glow-score">88</span>
               <span className="text-[12px] text-[#636366] ml-0.5">/100</span>
             </div>
           </div>
@@ -128,10 +132,14 @@ export default function SignInPage() {
           <div className="grid grid-cols-7 gap-2 pt-1">
             {PREVIEW_DAYS.map((d, idx) => (
               <div key={idx} className="flex flex-col items-center gap-1.5">
-                <div className="w-full h-[56px] rounded-[10px] bg-[#1c1c1e] p-[2px] flex flex-col justify-end overflow-hidden">
+                <div
+                  className={`w-full h-[56px] rounded-[10px] bg-[#1c1c1e] p-[2px] flex flex-col justify-end overflow-hidden ${
+                    d.today ? "ring-1 ring-[#30d158]/60 shadow-[0_0_16px_rgba(48,209,88,0.3)]" : ""
+                  }`}
+                >
                   {d.score !== null ? (
                     <div
-                      className="w-full rounded-[8px]"
+                      className="w-full rounded-[8px] shadow-[0_0_10px_rgba(48,209,88,0.35)]"
                       style={{ height: `${d.pct}%`, backgroundColor: d.color }}
                     />
                   ) : (

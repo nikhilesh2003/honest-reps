@@ -329,9 +329,9 @@ export default function AdminPage() {
                 key={item.id}
                 type="button"
                 onClick={() => setSection(item.id)}
-                className={`shrink-0 flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] font-medium transition-colors cursor-pointer ${
+                className={`shrink-0 flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] font-medium transition-all cursor-pointer ${
                   active
-                    ? "bg-[#1c1c1e] text-white font-semibold"
+                    ? "bg-[#1c1c1e] text-white font-semibold ring-1 ring-[#30d158]/35 shadow-[0_0_18px_rgba(48,209,88,0.18)]"
                     : "text-[#86868b] hover:text-white hover:bg-white/[0.04]"
                 }`}
               >

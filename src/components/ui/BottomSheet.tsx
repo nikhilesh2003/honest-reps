@@ -85,7 +85,7 @@ export function BottomSheet({
             ? { transform: `translateY(${dragOffset}px)`, transition: "none" }
             : undefined
         }
-        className="w-full max-w-md bg-[#141416] border border-white/[0.08] rounded-t-[28px] sm:rounded-[26px] max-h-[90vh] flex flex-col shadow-[0_-8px_40px_rgba(0,0,0,0.55)] overflow-hidden transition-transform duration-200"
+        className="w-full max-w-md bg-[#141416] border border-[#30d158]/20 rounded-t-[28px] sm:rounded-[26px] max-h-[90vh] flex flex-col shadow-[0_-10px_44px_rgba(48,209,88,0.16),0_20px_50px_rgba(0,0,0,0.7)] overflow-hidden transition-transform duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Native iOS Sheet Grabber + Calm Header */}

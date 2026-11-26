@@ -17,9 +17,15 @@ interface LeaderboardTabProps {
 
 function getRankBadgeStyle(rankIndex: number, isEst: boolean): string {
   if (isEst) return "bg-[#1c1c1e] text-[#86868b]";
-  if (rankIndex === 0) return "bg-[#30d158]/15 text-[#30d158]";
-  if (rankIndex === 1) return "bg-white/[0.1] text-white";
-  if (rankIndex === 2) return "bg-amber-400/15 text-amber-300";
+  if (rankIndex === 0) {
+    return "bg-[#30d158]/20 text-[#30d158] ring-1 ring-[#30d158]/50 shadow-[0_0_16px_rgba(48,209,88,0.4)]";
+  }
+  if (rankIndex === 1) {
+    return "bg-white/[0.12] text-white ring-1 ring-white/25 shadow-[0_0_14px_rgba(255,255,255,0.18)]";
+  }
+  if (rankIndex === 2) {
+    return "bg-amber-400/15 text-amber-300 ring-1 ring-amber-400/35 shadow-[0_0_14px_rgba(251,191,36,0.28)]";
+  }
   return "bg-transparent text-[#86868b]";
 }
 
@@ -177,7 +183,9 @@ export function LeaderboardTab({
                   )}
                   <span
                     className={`text-[21px] font-semibold tabular-nums ${
-                      isEst ? "text-amber-400" : "text-[#30d158]"
+                      isEst
+                        ? "text-amber-400 glow-amber"
+                        : "text-[#30d158] glow-score"
                     }`}
                   >
                     {score}

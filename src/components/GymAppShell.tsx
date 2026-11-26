@@ -998,7 +998,7 @@ export function GymAppShell() {
       )}
 
       {/* Minimal Apple Top Bar */}
-      <header className="sticky top-0 z-30 w-full bg-black/80 backdrop-blur-2xl border-b border-white/[0.05] pt-safe">
+      <header className="sticky top-0 z-30 w-full bg-black/80 backdrop-blur-2xl border-b border-[#30d158]/15 shadow-[0_4px_24px_rgba(48,209,88,0.08)] pt-safe">
         <div className="max-w-[460px] mx-auto px-4 h-14 flex items-center justify-between gap-2">
           <button
             type="button"
@@ -1217,7 +1217,7 @@ export function GymAppShell() {
       </main>
 
       {/* Bottom iOS-Style Tab Bar with Safe Area */}
-      <nav className="fixed bottom-0 left-0 right-0 z-30 bg-black/85 backdrop-blur-2xl border-t border-white/[0.05] pb-safe">
+      <nav className="fixed bottom-0 left-0 right-0 z-30 bg-black/85 backdrop-blur-2xl border-t border-[#30d158]/15 shadow-[0_-4px_26px_rgba(48,209,88,0.08)] pb-safe">
         <div className="max-w-[460px] mx-auto px-2 h-[60px] grid grid-cols-5 items-center">
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -1232,14 +1232,19 @@ export function GymAppShell() {
                   triggerHaptic("selection");
                   switchTab(item.id);
                 }}
-                className={`relative flex flex-col items-center justify-center gap-1 py-1 transition-colors cursor-pointer ${
-                  active ? "text-[#30d158]" : "text-[#86868b] hover:text-white"
+                className={`relative flex flex-col items-center justify-center gap-1 py-1 transition-all cursor-pointer ${
+                  active ? "text-[#30d158] glow-score" : "text-[#86868b] hover:text-white"
                 }`}
               >
                 <div className="relative">
-                  <Icon className="w-[20px] h-[20px]" strokeWidth={active ? 2.15 : 1.7} />
+                  <Icon
+                    className={`w-[20px] h-[20px] ${
+                      active ? "drop-shadow-[0_0_10px_rgba(48,209,88,0.75)]" : ""
+                    }`}
+                    strokeWidth={active ? 2.15 : 1.7}
+                  />
                   {hasBadge && (
-                    <span className="absolute -top-0.5 -right-1 w-2 h-2 rounded-full bg-[#30d158]" />
+                    <span className="absolute -top-0.5 -right-1 w-2 h-2 rounded-full bg-[#30d158] shadow-[0_0_8px_rgba(48,209,88,0.9)]" />
                   )}
                 </div>
                 <span className="text-[10px] font-medium tracking-[-0.01em]">

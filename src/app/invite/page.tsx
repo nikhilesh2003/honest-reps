@@ -228,8 +228,12 @@ export default function InviteLandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center px-5 py-10 pt-safe pb-safe">
-      <div className="w-full max-w-[360px] space-y-6 text-center">
+    <div className="min-h-screen bg-black relative overflow-hidden flex flex-col items-center justify-center px-5 py-10 pt-safe pb-safe">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 rounded-full bg-[#30d158]/14 blur-[90px]"
+      />
+      <div className="relative w-full max-w-[360px] space-y-6 text-center">
         <Link href="/" className="inline-block">
           <div className="brand-icon-box w-14 h-14 mx-auto rounded-2xl p-2 flex items-center justify-center">
             <img

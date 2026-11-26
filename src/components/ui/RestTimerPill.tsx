@@ -112,7 +112,7 @@ export function RestTimerPill({
   return (
     <div className="fixed top-[calc(0.55rem+env(safe-area-inset-top,0px))] left-3 right-3 z-[65] max-w-[400px] mx-auto pointer-events-none">
       <div
-        className={`pointer-events-auto bg-[#1c1c1e]/95 backdrop-blur-2xl border border-white/[0.08] shadow-[0_10px_32px_rgba(0,0,0,0.6)] overflow-hidden transition-all ${
+        className={`pointer-events-auto bg-[#1c1c1e]/95 backdrop-blur-2xl border border-[#30d158]/35 shadow-[0_0_32px_rgba(48,209,88,0.32),0_10px_32px_rgba(0,0,0,0.65)] overflow-hidden transition-all ${
           showPresets ? "rounded-[22px]" : "rounded-full"
         }`}
       >
@@ -208,9 +208,9 @@ export function RestTimerPill({
           </div>
         )}
 
-        <div className="w-full h-[2px] bg-white/[0.05]">
+        <div className="w-full h-[2.5px] bg-white/[0.06]">
           <div
-            className="h-full bg-[#30d158] transition-all duration-200"
+            className="h-full bg-[#30d158] shadow-[0_0_10px_rgba(48,209,88,0.85)] transition-all duration-200"
             style={{ width: `${isDone ? 100 : pct}%` }}
           />
         </div>

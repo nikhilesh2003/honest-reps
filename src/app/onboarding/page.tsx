@@ -143,8 +143,12 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center px-5 py-10 pt-safe pb-safe">
-      <form onSubmit={handleSubmit} className="w-full max-w-[400px] space-y-6">
+    <div className="min-h-screen bg-black relative overflow-hidden flex items-center justify-center px-5 py-10 pt-safe pb-safe">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute top-24 left-1/2 -translate-x-1/2 w-72 h-72 rounded-full bg-[#30d158]/14 blur-[90px]"
+      />
+      <form onSubmit={handleSubmit} className="relative w-full max-w-[400px] space-y-6">
         {/* Clean Apple Health-style Header */}
         <div className="text-center space-y-2">
           <div className="brand-icon-box w-12 h-12 mx-auto rounded-2xl p-1.5 flex items-center justify-center">

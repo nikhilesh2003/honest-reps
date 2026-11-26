@@ -280,64 +280,81 @@ export function HomeTab({
         </button>
       </div>
 
-      {/* Quiet 2-Tile Status Row: In the Gym & Today's Session */}
-      <div className="grid grid-cols-2 gap-3">
-        <button
-          type="button"
-          role="switch"
-          aria-checked={inGym}
-          onClick={onToggleInGym}
-          className={`p-3.5 rounded-[20px] border text-left flex flex-col justify-between gap-3 transition-all active:scale-[0.98] cursor-pointer ${
-            inGym
-              ? "bg-[#30d158]/[0.1] border-[#30d158]/35"
-              : "apple-card hover:border-white/15"
-          }`}
-        >
-          <div className="flex items-center justify-between gap-2">
-            <span
-              className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors shrink-0 ${
-                inGym ? "bg-[#30d158] text-black" : "bg-[#1c1c1e] text-[#86868b]"
-              }`}
-            >
-              <Dumbbell className="w-4 h-4" />
-            </span>
-            <span
-              className={`px-2 py-0.5 rounded-full text-[11px] font-semibold transition-colors ${
-                inGym
-                  ? "bg-[#30d158] text-black"
-                  : "bg-[#1c1c1e] text-[#86868b]"
-              }`}
-            >
-              {inGym ? "Live" : "Off"}
-            </span>
-          </div>
+      {/* Luminous 2-Tile Status Row: In the Gym & Today's Session */}
+      <div className="grid grid-cols-2 gap-3 items-stretch">
+        <div className="relative flex">
+          {inGym && (
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -inset-1 rounded-[22px] bg-[#30d158]/30 blur-xl animate-pulse"
+            />
+          )}
+          <button
+            type="button"
+            role="switch"
+            aria-checked={inGym}
+            onClick={onToggleInGym}
+            className={`relative w-full p-3.5 rounded-[20px] border text-left flex flex-col justify-between gap-3 transition-all active:scale-[0.98] cursor-pointer ${
+              inGym
+                ? "bg-[#0d2214] border-[#30d158]/70 shadow-[0_0_28px_rgba(48,209,88,0.4)]"
+                : "apple-card"
+            }`}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span
+                className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors shrink-0 ${
+                  inGym
+                    ? "bg-[#30d158] text-black"
+                    : "bg-[#1c1c1e] text-[#30d158] shadow-[0_0_12px_rgba(48,209,88,0.18)]"
+                }`}
+              >
+                <Dumbbell className="w-4 h-4" />
+              </span>
+              <span
+                className={`px-2 py-0.5 rounded-full text-[11px] font-semibold transition-colors ${
+                  inGym
+                    ? "bg-[#30d158] text-black"
+                    : "bg-[#1c1c1e] text-[#86868b]"
+                }`}
+              >
+                {inGym ? "Live" : "Off"}
+              </span>
+            </div>
 
-          <div className="min-w-0">
-            <div className="text-[14px] font-semibold text-white truncate">
-              In the Gym
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[14px] font-semibold text-white truncate">
+                  In the Gym
+                </span>
+                {inGym && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#30d158] animate-ping shrink-0" />
+                )}
+              </div>
+              <div className="text-[12px] text-[#86868b] tabular-nums mt-0.5 truncate">
+                {inGym ? `${elapsedLabel || "0m"} · Screen awake` : "Tap to check in"}
+              </div>
             </div>
-            <div className="text-[12px] text-[#86868b] tabular-nums mt-0.5 truncate">
-              {inGym ? `${elapsedLabel || "0m"} · Screen awake` : "Tap to check in"}
-            </div>
-          </div>
-        </button>
+          </button>
+        </div>
 
         <button
           type="button"
           onClick={onOpenCheckin}
-          className="apple-card p-3.5 hover:border-white/15 text-left flex flex-col justify-between gap-3 transition-all active:scale-[0.98] cursor-pointer"
+          className="apple-card p-3.5 text-left flex flex-col justify-between gap-3 transition-all active:scale-[0.98] cursor-pointer"
         >
           <div className="flex items-center justify-between gap-2">
             <span
               className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
                 todaySession?.isRest
                   ? "bg-[#1c1c1e] text-[#86868b]"
-                  : "bg-[#30d158]/12 text-[#30d158]"
+                  : "bg-[#30d158]/15 text-[#30d158] shadow-[0_0_14px_rgba(48,209,88,0.28)]"
               }`}
             >
               <span
                 className={`w-2.5 h-2.5 rounded-full ${
-                  todaySession?.isRest ? "bg-[#86868b]" : "bg-[#30d158]"
+                  todaySession?.isRest
+                    ? "bg-[#86868b]"
+                    : "bg-[#30d158] shadow-[0_0_10px_rgba(48,209,88,0.85)]"
                 }`}
               />
             </span>
@@ -354,8 +371,12 @@ export function HomeTab({
       </div>
 
       {/* Hero Effort Card + 7-Day Rolling Bars */}
-      <div className="apple-card p-5 space-y-5">
-        <div className="flex items-start justify-between gap-3">
+      <div className="apple-card p-5 space-y-5 relative overflow-hidden">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -top-16 -left-16 w-56 h-56 rounded-full bg-[#30d158]/12 blur-3xl"
+        />
+        <div className="relative flex items-start justify-between gap-3">
           <div>
             <div className="apple-section-label">Effort</div>
             {(todaySummary.status === "Scored" || todaySummary.status === "Calibrating") &&
@@ -375,7 +396,9 @@ export function HomeTab({
               >
                 <span
                   className={`text-[50px] font-semibold tracking-[-0.04em] leading-none tabular-nums ${
-                    todaySummary.status === "Calibrating" ? "text-amber-400" : "text-[#30d158]"
+                    todaySummary.status === "Calibrating"
+                      ? "text-amber-400 glow-amber"
+                      : "text-[#30d158] glow-score"
                   }`}
                 >
                   {todayScore}
@@ -404,7 +427,7 @@ export function HomeTab({
               <div
                 className={`inline-flex items-center gap-0.5 px-2.5 py-1 rounded-full text-[12px] font-medium tabular-nums ${
                   delta >= 0
-                    ? "bg-[#30d158]/12 text-[#30d158]"
+                    ? "bg-[#30d158]/15 text-[#30d158] shadow-[0_0_16px_rgba(48,209,88,0.25)]"
                     : "bg-white/[0.06] text-[#a1a1a6]"
                 }`}
               >
@@ -512,11 +535,15 @@ export function HomeTab({
                         canInspect
                           ? "cursor-pointer hover:brightness-110 active:scale-95"
                           : "cursor-default"
-                      } ${isToday ? "ring-1 ring-[#30d158]/50" : ""}`}
+                      } ${
+                        isToday
+                          ? "ring-1 ring-[#30d158]/70 shadow-[0_0_18px_rgba(48,209,88,0.28)]"
+                          : ""
+                      }`}
                     >
                       {day.status === "Scored" && day.effortScore !== null ? (
                         <div
-                          className="w-full rounded-[9px] flex items-start justify-center pt-1.5 transition-all duration-500"
+                          className="w-full rounded-[9px] flex items-start justify-center pt-1.5 transition-all duration-500 shadow-[0_0_12px_rgba(48,209,88,0.3)]"
                           style={{
                             height: `${heightPct}%`,
                             backgroundColor: fillColor,
@@ -593,14 +620,14 @@ export function HomeTab({
         </div>
       </div>
 
-      {/* Sleek Horizontal Action Buttons */}
+      {/* Sleek Horizontal Action Buttons with Accent Glow */}
       <div className="grid grid-cols-2 gap-3">
         <button
           type="button"
           onClick={() => onOpenStrength()}
-          className="apple-card p-3.5 text-left hover:border-white/15 active:scale-[0.98] transition-all cursor-pointer flex items-center gap-3 group"
+          className="apple-card p-3.5 text-left active:scale-[0.98] transition-all cursor-pointer flex items-center gap-3 group"
         >
-          <div className="w-9 h-9 rounded-full bg-[#30d158]/15 flex items-center justify-center text-[#30d158] shrink-0 group-hover:bg-[#30d158] group-hover:text-black transition-colors">
+          <div className="w-9 h-9 rounded-full bg-[#30d158]/15 shadow-[0_0_16px_rgba(48,209,88,0.28)] flex items-center justify-center text-[#30d158] shrink-0 group-hover:bg-[#30d158] group-hover:text-black transition-all">
             <Plus className="w-5 h-5" />
           </div>
           <div className="min-w-0">
@@ -612,9 +639,9 @@ export function HomeTab({
         <button
           type="button"
           onClick={onOpenCardio}
-          className="apple-card p-3.5 text-left hover:border-white/15 active:scale-[0.98] transition-all cursor-pointer flex items-center gap-3 group"
+          className="apple-card p-3.5 text-left active:scale-[0.98] transition-all cursor-pointer flex items-center gap-3 group"
         >
-          <div className="w-9 h-9 rounded-full bg-[#1c1c1e] flex items-center justify-center text-white shrink-0 group-hover:bg-white group-hover:text-black transition-colors">
+          <div className="w-9 h-9 rounded-full bg-[#1c1c1e] shadow-[0_0_14px_rgba(255,255,255,0.12)] flex items-center justify-center text-white shrink-0 group-hover:bg-white group-hover:text-black transition-all">
             <Zap className="w-4 h-4" />
           </div>
           <div className="min-w-0">
@@ -632,7 +659,7 @@ export function HomeTab({
               {suggestedRoutine.length > 0 ? `${sessionLabel} Lineup` : "Quick Log"}
             </span>
             {suggestedRoutine.length > 0 && (
-              <span className="text-[12px] text-[#30d158] tabular-nums font-medium">
+              <span className="text-[12px] text-[#30d158] glow-score tabular-nums font-medium">
                 {suggestedRoutine.filter((n) => loggedTodayNames.has(n.toLowerCase())).length}/
                 {suggestedRoutine.length} done
               </span>
@@ -646,10 +673,10 @@ export function HomeTab({
                   key={`routine-${exName}`}
                   type="button"
                   onClick={() => onOpenStrength(exName)}
-                  className={`shrink-0 px-3.5 py-2 rounded-full text-[13px] font-medium flex items-center gap-1.5 transition-colors cursor-pointer border ${
+                  className={`shrink-0 px-3.5 py-2 rounded-full text-[13px] font-medium flex items-center gap-1.5 transition-all cursor-pointer border ${
                     done
-                      ? "bg-[#30d158]/12 border-[#30d158]/35 text-[#30d158]"
-                      : "bg-[#111113] border-white/[0.08] text-white hover:border-white/20"
+                      ? "bg-[#30d158]/15 border-[#30d158]/45 text-[#30d158] shadow-[0_0_14px_rgba(48,209,88,0.25)]"
+                      : "bg-[#111113] border-[#30d158]/15 text-white hover:border-[#30d158]/40 shadow-[0_0_14px_rgba(48,209,88,0.06)]"
                   }`}
                 >
                   {done && <Check className="w-3.5 h-3.5 stroke-[2.5]" />}
@@ -662,7 +689,7 @@ export function HomeTab({
                 key={ex.id}
                 type="button"
                 onClick={() => onOpenStrength(ex.name)}
-                className="shrink-0 px-3.5 py-2 rounded-full bg-[#111113] border border-white/[0.06] hover:border-white/20 text-[13px] font-medium text-[#d1d1d6] hover:text-white transition-colors cursor-pointer"
+                className="shrink-0 px-3.5 py-2 rounded-full bg-[#111113] border border-[#30d158]/15 hover:border-[#30d158]/40 shadow-[0_0_14px_rgba(48,209,88,0.06)] hover:shadow-[0_0_16px_rgba(48,209,88,0.18)] text-[13px] font-medium text-[#d1d1d6] hover:text-white transition-all cursor-pointer"
               >
                 {ex.name}
               </button>

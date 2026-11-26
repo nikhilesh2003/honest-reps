@@ -837,8 +837,10 @@ export function LogStrengthSheet({
               return (
                 <div
                   key={idx}
-                  className={`px-2.5 py-2 rounded-2xl transition-colors ${
-                    s.completed ? "bg-[#30d158]/[0.1]" : "bg-[#1c1c1e]"
+                  className={`px-2.5 py-2 rounded-2xl transition-all border ${
+                    s.completed
+                      ? "bg-[#30d158]/[0.1] border-[#30d158]/40 shadow-[0_0_20px_rgba(48,209,88,0.18)]"
+                      : "bg-[#1c1c1e] border-white/[0.05]"
                   }`}
                 >
                   <div className="grid grid-cols-[36px_1fr_1fr_28px] items-center gap-2">
@@ -942,7 +944,7 @@ export function LogStrengthSheet({
                         1RM {display1RM} {unit}
                       </span>
                       {isPr && (
-                        <span className="px-2 py-0.5 rounded-full bg-amber-400/15 text-amber-300 text-[10px] font-semibold">
+                        <span className="px-2 py-0.5 rounded-full bg-amber-400/15 border border-amber-400/35 text-amber-300 shadow-[0_0_14px_rgba(251,191,36,0.3)] text-[10px] font-semibold">
                           PR ·{" "}
                           {prCheck.isWeightPr && prCheck.isOneRepMaxPr
                             ? "Weight & 1RM"

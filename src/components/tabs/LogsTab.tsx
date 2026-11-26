@@ -401,7 +401,7 @@ export function LogsTab({
         </div>
         <div className="text-center px-1">
           <div className="text-[11px] font-medium text-[#86868b]">Effort</div>
-          <div className="text-[18px] font-semibold text-[#30d158] tabular-nums mt-0.5">
+          <div className="text-[18px] font-semibold text-[#30d158] glow-score tabular-nums mt-0.5">
             {state.monthStats.monthEffort ?? "—"}
           </div>
         </div>
@@ -526,7 +526,7 @@ export function LogsTab({
                             · {row.subtitle}
                           </span>
                           {row.isPr && (
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-400/15 text-amber-300 font-semibold">
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-400/15 border border-amber-400/35 text-amber-300 shadow-[0_0_12px_rgba(251,191,36,0.28)] font-semibold">
                               PR{row.prDetails ? ` · ${row.prDetails}` : ""}
                             </span>
                           )}
@@ -617,7 +617,7 @@ export function LogsTab({
                             Rest
                           </span>
                         ) : (
-                          <span className="text-[15px] font-semibold text-[#30d158] tabular-nums pr-1.5">
+                          <span className="text-[15px] font-semibold text-[#30d158] glow-score tabular-nums pr-1.5">
                             {row.effortScore}
                           </span>
                         )}

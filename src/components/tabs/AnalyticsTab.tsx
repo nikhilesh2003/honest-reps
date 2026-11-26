@@ -314,8 +314,8 @@ export function AnalyticsTab({ state }: AnalyticsTabProps) {
                 }
                 className={`text-[36px] font-semibold tracking-[-0.03em] tabular-nums leading-none hover:opacity-80 active:scale-95 transition-all cursor-pointer ${
                   state.todaySummary.status === "Calibrating"
-                    ? "text-amber-400"
-                    : "text-[#30d158]"
+                    ? "text-amber-400 glow-amber"
+                    : "text-[#30d158] glow-score"
                 }`}
               >
                 {state.todaySummary.effortScore}
@@ -342,7 +342,7 @@ export function AnalyticsTab({ state }: AnalyticsTabProps) {
               <button
                 type="button"
                 onClick={() => setScoreReason(buildMonthScoreReason(state))}
-                className="text-[36px] font-semibold tracking-[-0.03em] text-[#30d158] tabular-nums leading-none hover:opacity-80 active:scale-95 transition-all cursor-pointer"
+                className="text-[36px] font-semibold tracking-[-0.03em] text-[#30d158] glow-score tabular-nums leading-none hover:opacity-80 active:scale-95 transition-all cursor-pointer"
               >
                 {state.monthStats.monthEffort}
               </button>
@@ -655,14 +655,14 @@ export function AnalyticsTab({ state }: AnalyticsTabProps) {
                     <div
                       className={`w-full h-[92px] rounded-[11px] p-[2px] flex flex-col justify-end bg-[#1c1c1e] transition-all ${
                         isSelected
-                          ? "ring-1 ring-white"
+                          ? "ring-1 ring-white shadow-[0_0_18px_rgba(255,255,255,0.28)]"
                           : isLatest
-                          ? "ring-1 ring-[#30d158]/50"
+                          ? "ring-1 ring-[#30d158]/60 shadow-[0_0_16px_rgba(48,209,88,0.28)]"
                           : ""
                       }`}
                     >
                       <div
-                        className="w-full rounded-[9px] flex items-start justify-center pt-1.5 transition-all duration-500"
+                        className="w-full rounded-[9px] flex items-start justify-center pt-1.5 transition-all duration-500 shadow-[0_0_10px_rgba(48,209,88,0.3)]"
                         style={{ height: `${pct}%`, backgroundColor: shade }}
                       >
                         <span
@@ -863,9 +863,10 @@ export function AnalyticsTab({ state }: AnalyticsTabProps) {
               <polyline
                 fill="none"
                 stroke="#30d158"
-                strokeWidth="2.2"
+                strokeWidth="2.4"
                 strokeLinecap="round"
                 strokeLinejoin="round"
+                style={{ filter: "drop-shadow(0 0 6px rgba(48, 209, 88, 0.65))" }}
                 points={svgPoints}
               />
               {weightPoints.map((w, idx) => {
@@ -1011,12 +1012,12 @@ export function AnalyticsTab({ state }: AnalyticsTabProps) {
             const isToday = day.date === state.realTodayIso;
             const styleClass =
               day.status === "Scored"
-                ? "bg-[#30d158]/20 text-[#30d158]"
+                ? "bg-[#30d158]/20 text-[#30d158] shadow-[0_0_12px_rgba(48,209,88,0.26)] border border-[#30d158]/35"
                 : day.status === "Calibrating"
-                ? "bg-amber-500/20 text-amber-300"
+                ? "bg-amber-500/20 text-amber-300 shadow-[0_0_10px_rgba(251,191,36,0.22)] border border-amber-400/30"
                 : day.status === "Rest"
-                ? "bg-[#2c2c2e] text-[#a1a1a6]"
-                : "bg-[#1c1c1e] text-[#636366]";
+                ? "bg-[#2c2c2e] text-[#a1a1a6] border border-white/[0.06]"
+                : "bg-[#1c1c1e] text-[#636366] border border-transparent";
 
             return (
               <button

@@ -112,15 +112,61 @@ body {
   display: none;
 }
 
-/* Quiet Apple Surface Card */
+/* Luminous Apple Surface Card with Ambient OLED Glow */
 .apple-card {
   background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid rgba(48, 209, 88, 0.14);
   border-radius: 20px;
+  box-shadow:
+    0 0 26px rgba(48, 209, 88, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.apple-card:hover,
+.apple-card:focus-within {
+  border-color: rgba(48, 209, 88, 0.26);
+  box-shadow:
+    0 0 32px rgba(48, 209, 88, 0.13),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
 }
 
 html[data-theme="light"] .apple-card {
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  border-color: rgba(22, 163, 74, 0.16);
+  box-shadow:
+    0 4px 20px rgba(22, 163, 74, 0.08),
+    0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+/* Luminous Score & Accent Utilities */
+.glow-score {
+  text-shadow: 0 0 22px rgba(48, 209, 88, 0.48);
+}
+.glow-amber {
+  text-shadow: 0 0 20px rgba(251, 191, 36, 0.42);
+}
+html[data-theme="light"] .glow-score,
+html[data-theme="light"] .glow-amber {
+  text-shadow: none;
+}
+
+/* Automatic Glow on All Primary Green & White Buttons / Active Pills */
+.bg-\[\#30d158\],
+.bg-\[\#10e760\] {
+  box-shadow:
+    0 0 20px rgba(48, 209, 88, 0.42),
+    0 0 6px rgba(48, 209, 88, 0.28);
+}
+button.bg-white,
+a.bg-white {
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+}
+html[data-theme="light"] .bg-\[\#30d158\],
+html[data-theme="light"] .bg-\[\#10e760\] {
+  box-shadow: 0 4px 16px rgba(22, 163, 74, 0.3);
+}
+html[data-theme="light"] button.bg-white,
+html[data-theme="light"] a.bg-white {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
 }
 
 /* Calm Sentence-Case Section Header (Apple Health / Fitness style) */
@@ -131,13 +177,13 @@ html[data-theme="light"] .apple-card {
   color: var(--text-secondary);
 }
 
-/* Native iOS Filled Input (No harsh black hole borders) */
+/* Native iOS Filled Input with Focus Glow */
 .apple-input {
   background-color: var(--bg-card-elevated);
-  border: 1px solid transparent;
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 12px;
   color: var(--text-primary);
-  transition: border-color 0.15s ease, background-color 0.15s ease;
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
 }
 .apple-input::placeholder {
   color: var(--text-muted);
@@ -145,22 +191,26 @@ html[data-theme="light"] .apple-card {
 .apple-input:focus {
   outline: none;
   border-color: var(--accent);
+  box-shadow: 0 0 18px rgba(48, 209, 88, 0.24);
 }
 html[data-theme="light"] .apple-input {
   background-color: #f2f2f7;
+  border-color: rgba(0, 0, 0, 0.06);
 }
 
-/* Native iOS Segmented Control */
+/* Native iOS Segmented Control with Active Glow */
 .apple-segmented {
   display: flex;
   align-items: center;
   background-color: var(--bg-card-elevated);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   padding: 3px;
   border-radius: 11px;
   gap: 2px;
 }
 html[data-theme="light"] .apple-segmented {
   background-color: #e5e5ea;
+  border-color: rgba(0, 0, 0, 0.05);
 }
 .apple-segmented-btn {
   flex: 1;
@@ -182,15 +232,19 @@ html[data-theme="light"] .apple-segmented {
   background-color: #323236;
   color: #ffffff;
   font-weight: 600;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28);
+  box-shadow:
+    0 0 14px rgba(48, 209, 88, 0.22),
+    0 1px 3px rgba(0, 0, 0, 0.32);
 }
 html[data-theme="light"] .apple-segmented-btn[data-active="true"] {
   background-color: #ffffff;
   color: #1d1d1f;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow:
+    0 2px 10px rgba(22, 163, 74, 0.14),
+    0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
-/* Flat Matte Effort Tile States (Zero neon glow) */
+/* Luminous Effort Tile States */
 .tile-nolog {
   background-color: var(--effort-nolog);
   border: 1px solid var(--effort-nolog-border);
@@ -200,18 +254,23 @@ html[data-theme="light"] .apple-segmented-btn[data-active="true"] {
 }
 .tile-low {
   background-color: var(--effort-low);
+  box-shadow: 0 0 5px rgba(23, 92, 49, 0.35);
 }
 .tile-steady {
   background-color: var(--effort-steady);
+  box-shadow: 0 0 7px rgba(34, 139, 70, 0.42);
 }
 .tile-high {
   background-color: var(--effort-high);
+  box-shadow: 0 0 10px rgba(42, 179, 86, 0.52);
 }
 .tile-very-high {
   background-color: var(--effort-very-high);
+  box-shadow: 0 0 13px rgba(48, 209, 88, 0.72);
 }
 .tile-calibrating {
   background-color: var(--effort-calibrating);
+  box-shadow: 0 0 9px rgba(217, 119, 6, 0.45);
 }
 .tile-est-very-low {
   background-color: var(--est-very-low);
@@ -221,12 +280,15 @@ html[data-theme="light"] .apple-segmented-btn[data-active="true"] {
 }
 .tile-est-steady {
   background-color: var(--est-steady);
+  box-shadow: 0 0 6px rgba(163, 72, 17, 0.38);
 }
 .tile-est-high {
   background-color: var(--est-high);
+  box-shadow: 0 0 9px rgba(217, 99, 24, 0.48);
 }
 .tile-est-very-high {
   background-color: var(--est-very-high);
+  box-shadow: 0 0 13px rgba(255, 159, 10, 0.65);
 }
 .tile-rest {
   background-color: var(--effort-rest);
@@ -339,11 +401,12 @@ html[data-theme="light"] .bg-white.text-black {
   color: #ffffff !important;
 }
 
-/* Brand mark blending */
+/* Brand mark blending + luminous emblem glow */
 .brand-icon-box {
   background-color: transparent !important;
   border: none !important;
   box-shadow: none !important;
+  filter: drop-shadow(0 0 12px rgba(48, 209, 88, 0.35));
 }
 .brand-icon-box img {
   mix-blend-mode: screen;
@@ -351,12 +414,13 @@ html[data-theme="light"] .bg-white.text-black {
 html[data-theme="light"] .brand-icon-box {
   background-color: #000000 !important;
   border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  filter: drop-shadow(0 2px 8px rgba(22, 163, 74, 0.2));
 }
 html[data-theme="light"] .brand-icon-box img {
   mix-blend-mode: normal;
 }
 
-/* Native iOS Toggle Switch */
+/* Native iOS Toggle Switch with Active Glow */
 .ios-switch {
   position: relative;
   display: inline-flex;
@@ -365,7 +429,7 @@ html[data-theme="light"] .brand-icon-box img {
   height: 28px;
   border-radius: 9999px;
   background: #39393d;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
   cursor: pointer;
   flex-shrink: 0;
   border: none;
@@ -376,6 +440,7 @@ html[data-theme="light"] .ios-switch {
 }
 .ios-switch[data-checked="true"] {
   background: var(--accent);
+  box-shadow: 0 0 18px rgba(48, 209, 88, 0.48);
 }
 .ios-switch-thumb {
   width: 24px;
