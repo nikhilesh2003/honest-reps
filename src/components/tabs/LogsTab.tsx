@@ -116,8 +116,8 @@ export function LogsTab({
           e.sets
             .map((s) => `${formatWeight(s.weightKg, unit)} × ${s.reps}`)
             .join(" · ") +
-          (avgRest > 0 ? ` · avg ${formatRestDuration(avgRest)} rest` : "") +
-          (e.optionalMinutes ? ` · ${e.optionalMinutes} min` : "") +
+          (avgRest > 0 ? ` · ${formatRestDuration(avgRest)} rest` : "") +
+          (e.optionalMinutes ? ` · ${e.optionalMinutes}m` : "") +
           (typeof e.rir === "number" ? ` · RIR ${e.rir === 4 ? "4+" : e.rir}` : ""),
         effortScore: e.effortScore,
         status: e.status,
@@ -128,11 +128,11 @@ export function LogsTab({
         isPr,
         prDetails:
           prCheck.isWeightPr && prCheck.isOneRepMaxPr
-            ? "Weight & 1RM PR"
+            ? "Weight & 1RM"
             : prCheck.isWeightPr
-            ? "Max Weight PR"
+            ? "Weight"
             : prCheck.isOneRepMaxPr
-            ? "1RM PR"
+            ? "1RM"
             : undefined,
       };
     });
@@ -217,7 +217,7 @@ export function LogsTab({
             rawName: displayTitle,
             subtitle: `${rowStatus === "Rest" ? "Rest" : "Cardio"} · ${splits.length} splits`,
             details: [
-              `${totalMins} min`,
+              `${totalMins}m`,
               totalDist > 0 ? formatDistance(totalDist, unit) : null,
               weightedHr ? `${weightedHr} bpm` : null,
               `${totalKcal} kcal`,
@@ -244,7 +244,7 @@ export function LogsTab({
             rawName: c.activityType,
             subtitle: c.isRestActivity ? "Rest" : "Cardio",
             details: [
-              `${c.minutes} min`,
+              `${c.minutes}m`,
               c.distanceKm ? formatDistance(c.distanceKm, unit) : null,
               c.avgHeartRate ? `${c.avgHeartRate} bpm` : null,
               `${c.kcal} kcal`,
@@ -379,12 +379,12 @@ export function LogsTab({
   return (
     <div className="space-y-4 pb-6">
       {/* Header */}
-      <div className="flex items-center justify-between pt-1">
-        <h1 className="text-[28px] font-bold tracking-[-0.03em] text-white">Logs</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-[30px] font-semibold tracking-[-0.03em] text-white">History</h1>
         <button
           type="button"
           onClick={() => setBackfillPickerOpen(true)}
-          className="px-3.5 py-2 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] text-[12px] font-medium text-[#10e760] flex items-center gap-1.5 transition-colors cursor-pointer"
+          className="px-3.5 py-2 rounded-full bg-[#111113] border border-white/[0.06] hover:border-white/15 text-[12px] font-medium text-[#30d158] flex items-center gap-1.5 transition-colors cursor-pointer"
         >
           <CalendarPlus className="w-3.5 h-3.5" />
           Backfill
@@ -394,40 +394,32 @@ export function LogsTab({
       {/* Minimal 4-Stat Strip */}
       <div className="apple-card grid grid-cols-4 divide-x divide-white/[0.06] py-3.5">
         <div className="text-center px-1">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
-            Active
-          </div>
-          <div className="text-[18px] font-bold text-white tabular-nums mt-0.5">
+          <div className="text-[11px] font-medium text-[#86868b]">Active</div>
+          <div className="text-[18px] font-semibold text-white tabular-nums mt-0.5">
             {state.monthStats.activeDaysThisMonth}
           </div>
         </div>
         <div className="text-center px-1">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
-            Effort
-          </div>
-          <div className="text-[18px] font-bold text-[#10e760] tabular-nums mt-0.5">
+          <div className="text-[11px] font-medium text-[#86868b]">Effort</div>
+          <div className="text-[18px] font-semibold text-[#30d158] tabular-nums mt-0.5">
             {state.monthStats.monthEffort ?? "—"}
           </div>
         </div>
         <div className="text-center px-1">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
-            Sets
-          </div>
-          <div className="text-[18px] font-bold text-white tabular-nums mt-0.5">
+          <div className="text-[11px] font-medium text-[#86868b]">Sets</div>
+          <div className="text-[18px] font-semibold text-white tabular-nums mt-0.5">
             {totalSetsMonth}
           </div>
         </div>
         <div className="text-center px-1">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
-            Cardio
-          </div>
-          <div className="text-[16px] font-bold text-white tabular-nums mt-0.5">
+          <div className="text-[11px] font-medium text-[#86868b]">Cardio</div>
+          <div className="text-[16px] font-semibold text-white tabular-nums mt-0.5">
             {formatDistance(state.cardioTotals.totalDistanceKm, unit)}
           </div>
         </div>
       </div>
 
-      {/* Instant Search Bar */}
+      {/* iOS Search Field */}
       <div className="relative flex items-center">
         <Search className="w-4 h-4 text-[#86868b] absolute left-3.5 pointer-events-none" />
         <input
@@ -437,8 +429,8 @@ export function LogsTab({
             setSearchQuery(e.target.value);
             setVisibleLimit(45);
           }}
-          placeholder="Search exercise, muscle group, or date..."
-          className="w-full h-10 pl-10 pr-9 rounded-2xl bg-[#0a0a0c] border border-white/[0.08] text-white text-[13px] placeholder:text-[#525257] focus:outline-none focus:border-[#10e760]"
+          placeholder="Search exercise, muscle group, or date"
+          className="w-full h-10 pl-10 pr-9 rounded-xl bg-[#111113] border border-white/[0.06] text-white text-[13px] placeholder:text-[#636366] focus:outline-none focus:border-[#30d158]"
         />
         {searchQuery && (
           <button
@@ -452,8 +444,8 @@ export function LogsTab({
         )}
       </div>
 
-      {/* Clean Scrollbar-Free Filter Chips */}
-      <div className="flex gap-2 overflow-x-auto no-scrollbar pb-0.5">
+      {/* Filter Pills */}
+      <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
         {chips.map((c) => {
           const active = filter === c.key;
           return (
@@ -464,10 +456,10 @@ export function LogsTab({
                 setFilter(c.key);
                 setVisibleLimit(45);
               }}
-              className={`shrink-0 px-3.5 py-1.5 rounded-full text-[13px] font-medium transition-colors cursor-pointer border ${
+              className={`shrink-0 px-3.5 py-1.5 rounded-full text-[13px] font-medium transition-colors cursor-pointer ${
                 active
-                  ? "bg-white text-black border-white"
-                  : "bg-[#0a0a0c] text-[#86868b] border-white/[0.08] hover:text-white"
+                  ? "bg-white text-black font-semibold"
+                  : "bg-[#111113] border border-white/[0.06] text-[#86868b] hover:text-white"
               }`}
             >
               {c.label}
@@ -479,96 +471,91 @@ export function LogsTab({
       {/* Grouped History List */}
       {groupedByDate.length === 0 ? (
         <div className="apple-card p-8 text-center text-[13px] text-[#86868b]">
-          No logs match this filter.
+          No workouts match this filter.
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-5">
           {groupedByDate.map(([date, items]) => {
             const daySummary = state.summaries365.find((d) => d.date === date);
             const dayKcal = state.recentCardioLogs
               .filter((c) => c.date === date)
               .reduce((sum, c) => sum + (c.kcal || 0), 0);
             return (
-              <div key={date} className="apple-card p-4 space-y-3">
-                <div className="flex items-center justify-between border-b border-white/[0.06] pb-2.5">
-                  <div>
-                    <div className="text-[13px] font-semibold text-white">
+              <div key={date} className="space-y-2">
+                <div className="flex items-center justify-between px-1">
+                  <div className="flex items-baseline gap-2 min-w-0">
+                    <span className="text-[14px] font-semibold text-white">
                       {date === state.realTodayIso
                         ? "Today"
                         : formatFullDate(date).replace(/,\s*\d{4}$/, "")}
-                    </div>
-                    <div className="text-[11px] text-[#86868b] tabular-nums">
+                    </span>
+                    <span className="text-[12px] text-[#86868b] truncate tabular-nums">
                       {daySummary?.isRest
-                        ? "Rest day"
-                        : daySummary?.sessionGroups.join(" · ") || "Workout"}
+                        ? "Rest"
+                        : daySummary?.sessionGroups.join(" · ") || ""}
                       {dayKcal > 0 ? ` · ${dayKcal.toLocaleString()} kcal` : ""}
-                    </div>
+                    </span>
                   </div>
-                  <div>
+                  <div className="shrink-0">
                     {daySummary?.status === "Scored" && daySummary.effortScore !== null ? (
-                      <span className="px-2.5 py-1 rounded-full text-[12px] font-semibold tabular-nums bg-[#10e760]/12 text-[#10e760] border border-[#10e760]/25">
+                      <span className="text-[12px] font-semibold tabular-nums text-[#30d158]">
                         {daySummary.effortScore} · {daySummary.band}
                       </span>
                     ) : daySummary?.status === "Calibrating" ? (
-                      <span className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                      <span className="text-[11px] font-medium text-amber-400">
                         Calibrating
                       </span>
                     ) : daySummary?.status === "Rest" ? (
-                      <span className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-white/[0.06] text-[#a1a1a6] border border-white/10">
-                        Rest
-                      </span>
+                      <span className="text-[11px] font-medium text-[#86868b]">Rest</span>
                     ) : null}
                   </div>
                 </div>
 
-                <div className="divide-y divide-white/[0.05]">
+                <div className="apple-card px-4 py-1 divide-y divide-white/[0.06]">
                   {items.map((row) => (
                     <div
                       key={row.id}
-                      className="py-2.5 first:pt-0 last:pb-0 flex items-center justify-between gap-2.5"
+                      className="py-3 flex items-center justify-between gap-2.5"
                     >
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-[14px] font-medium text-[#f5f5f7]">
+                          <span className="text-[15px] font-medium text-[#f5f5f7]">
                             {row.title}
                           </span>
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.06] text-[#86868b]">
-                            {row.subtitle}
+                          <span className="text-[11px] text-[#86868b]">
+                            · {row.subtitle}
                           </span>
                           {row.isPr && (
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-400/15 text-amber-300 border border-amber-400/30 font-semibold tracking-wide flex items-center gap-1">
-                              <span>★ PR</span>
-                              {row.prDetails && (
-                                <span className="font-normal opacity-85 text-[9px]">
-                                  {row.prDetails}
-                                </span>
-                              )}
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-400/15 text-amber-300 font-semibold">
+                              PR{row.prDetails ? ` · ${row.prDetails}` : ""}
                             </span>
                           )}
                           {row.addedLater && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.09] text-[#d1d1d6]">
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#1c1c1e] text-[#86868b]">
                               Added later
                             </span>
                           )}
                           {row.kcalIsEstimated && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.09] text-[#d1d1d6]">
-                              Estimated
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#1c1c1e] text-[#86868b]">
+                              Est.
                             </span>
                           )}
                         </div>
                         <div className="text-[12px] text-[#86868b] mt-0.5 tabular-nums">
                           {row.details}
-                          {formatLogTime(row.createdAt) ? ` · ${formatLogTime(row.createdAt)}` : ""}
+                          {formatLogTime(row.createdAt)
+                            ? ` · ${formatLogTime(row.createdAt)}`
+                            : ""}
                         </div>
                         {row.splits && row.splits.length > 1 && (
-                          <div className="mt-2 pl-2.5 border-l border-white/15 space-y-1">
+                          <div className="mt-2 pl-2.5 border-l border-white/[0.08] space-y-1">
                             {row.splits.map((s) => (
                               <div
                                 key={s.id}
                                 className="flex items-center justify-between gap-2 text-[11px] text-[#86868b] tabular-nums leading-tight"
                               >
                                 <div className="flex items-center flex-wrap gap-x-1.5 gap-y-0.5">
-                                  <span className="font-semibold text-white/90 whitespace-nowrap shrink-0">
+                                  <span className="font-medium text-[#d1d1d6] whitespace-nowrap shrink-0">
                                     Split {s.splitNumber}:
                                   </span>
                                   <span className="whitespace-nowrap">{s.minutes}m</span>
@@ -577,7 +564,7 @@ export function LogsTab({
                                       · {formatDistance(s.distanceKm, unit)}
                                     </span>
                                   )}
-                                  <span className="whitespace-nowrap">· {s.kcal}kcal</span>
+                                  <span className="whitespace-nowrap">· {s.kcal} kcal</span>
                                   {formatLogTime(s.createdAt) && (
                                     <span className="whitespace-nowrap opacity-75">
                                       · {formatLogTime(s.createdAt)}
@@ -594,7 +581,7 @@ export function LogsTab({
                                       );
                                       if (found) onEditCardio(found);
                                     }}
-                                    className="w-6 h-6 rounded-md flex items-center justify-center text-[#6e6e73] hover:text-white hover:bg-white/[0.06] cursor-pointer"
+                                    className="w-6 h-6 rounded-md flex items-center justify-center text-[#636366] hover:text-white cursor-pointer"
                                   >
                                     <Pencil className="w-3 h-3" />
                                   </button>
@@ -603,9 +590,13 @@ export function LogsTab({
                                     aria-label={`Delete split ${s.splitNumber}`}
                                     disabled={deletingId === s.id}
                                     onClick={() =>
-                                      handleDeleteSingleSplit(s.id, s.splitNumber, row.rawName)
+                                      handleDeleteSingleSplit(
+                                        s.id,
+                                        s.splitNumber,
+                                        row.rawName
+                                      )
                                     }
-                                    className="w-6 h-6 rounded-md flex items-center justify-center text-[#6e6e73] hover:text-red-400 hover:bg-white/[0.06] cursor-pointer"
+                                    className="w-6 h-6 rounded-md flex items-center justify-center text-[#636366] hover:text-red-400 cursor-pointer"
                                   >
                                     <Trash2 className="w-3 h-3" />
                                   </button>
@@ -616,17 +607,17 @@ export function LogsTab({
                         )}
                       </div>
 
-                      <div className="flex items-center gap-1 shrink-0">
+                      <div className="flex items-center gap-0.5 shrink-0">
                         {row.status === "Calibrating" ? (
-                          <span className="text-[11px] font-medium text-amber-400 tabular-nums pr-1">
+                          <span className="text-[11px] font-medium text-amber-400 tabular-nums pr-1.5">
                             {row.calibrationLabel || "Calibrating"}
                           </span>
                         ) : row.status === "Rest" ? (
-                          <span className="text-[11px] font-medium text-[#86868b] pr-1">
+                          <span className="text-[12px] font-medium text-[#86868b] pr-1.5">
                             Rest
                           </span>
                         ) : (
-                          <span className="text-[15px] font-semibold text-[#10e760] tabular-nums pr-1">
+                          <span className="text-[15px] font-semibold text-[#30d158] tabular-nums pr-1.5">
                             {row.effortScore}
                           </span>
                         )}
@@ -635,18 +626,22 @@ export function LogsTab({
                           type="button"
                           onClick={() => {
                             if (row.kind === "strength") {
-                              const found = state.recentExerciseLogs.find((e) => e.id === row.id);
+                              const found = state.recentExerciseLogs.find(
+                                (e) => e.id === row.id
+                              );
                               if (found) onEditStrength(found);
                             } else {
                               const targetId = row.splits?.length
                                 ? row.splits[row.splits.length - 1].id
                                 : row.id;
-                              const found = state.recentCardioLogs.find((c) => c.id === targetId);
+                              const found = state.recentCardioLogs.find(
+                                (c) => c.id === targetId
+                              );
                               if (found) onEditCardio(found);
                             }
                           }}
                           aria-label={`Edit ${row.title}`}
-                          className="w-9 h-9 rounded-xl flex items-center justify-center text-[#6e6e73] hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-[#636366] hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
                         >
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
@@ -656,7 +651,7 @@ export function LogsTab({
                           disabled={deletingId === row.id}
                           onClick={() => handleDeleteRow(row)}
                           aria-label={`Delete ${row.title}`}
-                          className="w-9 h-9 rounded-xl flex items-center justify-center text-[#6e6e73] hover:text-red-400 hover:bg-white/[0.06] transition-colors cursor-pointer"
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-[#636366] hover:text-red-400 hover:bg-white/[0.06] transition-colors cursor-pointer"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -672,9 +667,9 @@ export function LogsTab({
             <button
               type="button"
               onClick={() => setVisibleLimit((prev) => prev + 45)}
-              className="w-full h-11 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-[13px] font-medium text-white transition-colors cursor-pointer"
+              className="w-full h-11 rounded-full bg-[#111113] border border-white/[0.06] hover:border-white/15 text-[13px] font-medium text-white transition-colors cursor-pointer"
             >
-              Show older logs ({filtered.length - visibleLimit} remaining)
+              Show older ({filtered.length - visibleLimit} remaining)
             </button>
           )}
         </div>
@@ -684,7 +679,7 @@ export function LogsTab({
       <BottomSheet
         open={backfillPickerOpen}
         onClose={() => setBackfillPickerOpen(false)}
-        title="Backfill Entry"
+        title="Backfill Workout"
         subtitle={`Up to ${state.appSettings.backfillWindowDays} days back · Labeled "Added later"`}
       >
         <div className="grid grid-cols-2 gap-3">
@@ -694,7 +689,7 @@ export function LogsTab({
               setBackfillPickerOpen(false);
               onOpenBackfillStrength();
             }}
-            className="p-4 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-left cursor-pointer"
+            className="p-4 rounded-2xl bg-[#1c1c1e] hover:bg-white/[0.08] text-left cursor-pointer"
           >
             <div className="text-[15px] font-semibold text-white">Strength</div>
             <div className="text-[12px] text-[#86868b] mt-0.5">Sets &amp; reps</div>
@@ -705,7 +700,7 @@ export function LogsTab({
               setBackfillPickerOpen(false);
               onOpenBackfillCardio();
             }}
-            className="p-4 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-left cursor-pointer"
+            className="p-4 rounded-2xl bg-[#1c1c1e] hover:bg-white/[0.08] text-left cursor-pointer"
           >
             <div className="text-[15px] font-semibold text-white">Cardio</div>
             <div className="text-[12px] text-[#86868b] mt-0.5">Preset, text or photo</div>

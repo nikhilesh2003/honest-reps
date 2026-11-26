@@ -3,8 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  Download,
-  Copy,
   Bell,
   Dumbbell,
   User,
@@ -26,6 +24,7 @@ import {
   Check,
   X,
   Image as ImageIcon,
+  Download,
 } from "lucide-react";
 import { AppStatePayload } from "@/lib/client-types";
 import { GymLocationConfig } from "@/lib/gym-location";
@@ -159,10 +158,10 @@ export function ProfileTab({
     applyThemePreference(next);
     onToast(
       next === "system"
-        ? "Appearance set to System"
+        ? "Appearance set to Auto"
         : next === "light"
-        ? "Light theme enabled"
-        : "Dark theme enabled"
+        ? "Light appearance enabled"
+        : "Dark appearance enabled"
     );
   };
 
@@ -333,51 +332,45 @@ export function ProfileTab({
   ]);
 
   return (
-    <div className="space-y-4 pb-8">
-      {/* Header */}
-      <div className="flex items-center justify-between pt-1">
+    <div className="space-y-5 pb-8">
+      {/* Calm Profile Header */}
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-[28px] font-bold tracking-[-0.03em] text-white leading-tight">
+          <h1 className="text-[30px] font-semibold tracking-[-0.03em] text-white leading-tight">
             {profile.name}
           </h1>
-          <div className="text-[13px] font-medium text-[#10e760] mt-0.5">
+          <div className="text-[13px] font-medium text-[#86868b] mt-0.5">
             @{profile.username}
           </div>
         </div>
         <button
           type="button"
           onClick={openEditProfile}
-          className="px-3.5 py-2 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] text-[12px] font-medium text-white cursor-pointer"
+          className="px-4 py-2 rounded-full bg-[#111113] border border-white/[0.06] hover:border-white/15 text-[13px] font-medium text-white cursor-pointer"
         >
           Edit
         </button>
       </div>
 
-      {/* Summary Figures */}
-      <div className="grid grid-cols-3 gap-2.5">
-        <div className="apple-card p-3.5 text-center">
-          <div className="text-[22px] font-bold text-[#10e760] tabular-nums">
+      {/* Unified 3-Figure Summary Card */}
+      <div className="apple-card grid grid-cols-3 divide-x divide-white/[0.06] py-3.5">
+        <div className="text-center px-1">
+          <div className="text-[22px] font-semibold text-[#30d158] tabular-nums">
             {monthStats.activeDaysYear}
           </div>
-          <div className="text-[10px] font-semibold uppercase tracking-[0.06em] text-[#86868b] mt-0.5">
-            Year Active
-          </div>
+          <div className="text-[11px] font-medium text-[#86868b] mt-0.5">Year Active</div>
         </div>
-        <div className="apple-card p-3.5 text-center">
-          <div className="text-[22px] font-bold text-[#10e760] tabular-nums">
+        <div className="text-center px-1">
+          <div className="text-[22px] font-semibold text-[#30d158] tabular-nums">
             {monthStats.currentStreak}
           </div>
-          <div className="text-[10px] font-semibold uppercase tracking-[0.06em] text-[#86868b] mt-0.5">
-            Streak
-          </div>
+          <div className="text-[11px] font-medium text-[#86868b] mt-0.5">Streak</div>
         </div>
-        <div className="apple-card p-3.5 text-center">
-          <div className="text-[22px] font-bold text-white tabular-nums">
+        <div className="text-center px-1">
+          <div className="text-[22px] font-semibold text-white tabular-nums">
             {monthStats.longestStreak}
           </div>
-          <div className="text-[10px] font-semibold uppercase tracking-[0.06em] text-[#86868b] mt-0.5">
-            Longest
-          </div>
+          <div className="text-[11px] font-medium text-[#86868b] mt-0.5">Longest</div>
         </div>
       </div>
 
@@ -387,96 +380,106 @@ export function ProfileTab({
         thresholds={state.appSettings.gridThresholds}
       />
 
-      {/* Cardio & Strength Milestones & Badges Showcase */}
+      {/* Milestones & Badges */}
       <MilestoneBadgesCard summary={milestonesSummary} />
 
-      {/* PROFILE SETTINGS SECTION */}
-      <div className="space-y-3 pt-1">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b] px-1">
-          Settings
-        </div>
-
-        {/* Monthly Log Export, Copy & OLED Summary Card */}
-        <div className="apple-card p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-[13px] font-semibold text-white">
-              Share &amp; Export
-            </span>
-            <span className="text-[11px] text-[#86868b] tabular-nums">
-              {monthStats.monthPrefix}
-            </span>
-          </div>
-
+      {/* Share & Export (Native iOS Inset-Grouped List — all 6 actions preserved!) */}
+      <div className="space-y-2">
+        <div className="apple-section-label px-1">Share &amp; Export</div>
+        <div className="apple-card divide-y divide-white/[0.06] overflow-hidden">
           <button
             type="button"
             onClick={() => setShareCardOpen(true)}
-            className="w-full h-11 px-3.5 rounded-2xl bg-[#10e760] hover:bg-[#25d658] text-black text-[13px] font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
+            className="w-full px-4 py-3.5 flex items-center justify-between hover:bg-white/[0.02] transition-colors cursor-pointer"
           >
-            <ImageIcon className="w-4 h-4 shrink-0" />
-            Share OLED Summary Card
+            <span className="flex items-center gap-3 text-[14px] font-medium text-white">
+              <ImageIcon className="w-4 h-4 text-[#30d158]" />
+              Summary Card
+            </span>
+            <span className="flex items-center gap-1 text-[13px] font-medium text-[#30d158]">
+              Share
+              <ChevronRight className="w-4 h-4 text-[#636366]" />
+            </span>
           </button>
 
-          <div className="grid grid-cols-2 gap-2.5">
-            <button
-              type="button"
-              onClick={() => handleExportMonthLog("csv")}
-              className="h-10 px-3 rounded-2xl bg-white/[0.07] hover:bg-white/[0.12] border border-white/[0.1] text-white text-[13px] font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
-            >
-              <Download className="w-4 h-4 shrink-0" />
-              Export CSV
-            </button>
-            <button
-              type="button"
-              disabled={copyingLog}
-              onClick={handleCopyMonthLog}
-              className="h-10 px-3 rounded-2xl bg-white/[0.07] hover:bg-white/[0.12] border border-white/[0.1] text-white text-[13px] font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
-            >
-              <Copy className="w-4 h-4 shrink-0" />
-              {copyingLog ? "Copying..." : "Copy Log"}
-            </button>
+          <div className="px-4 py-3 flex items-center justify-between gap-2">
+            <span className="flex items-center gap-3 text-[14px] font-medium text-white">
+              <MessageCircle className="w-4 h-4 text-[#86868b]" />
+              WhatsApp
+            </span>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() =>
+                  openWhatsAppShare(
+                    buildProgressShareText({
+                      name: profile.name,
+                      username: profile.username,
+                      monthPrefix: monthStats.monthPrefix,
+                      monthEffort: monthStats.monthEffort,
+                      activeDays: monthStats.activeDaysThisMonth,
+                      streak: monthStats.currentStreak,
+                    })
+                  )
+                }
+                className="px-3 py-1.5 rounded-full bg-[#1c1c1e] hover:bg-white/[0.1] text-[12px] font-medium text-[#30d158] cursor-pointer"
+              >
+                Progress
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  openWhatsAppShare(buildInviteShareText(profile.name, profile.username))
+                }
+                className="px-3 py-1.5 rounded-full bg-[#1c1c1e] hover:bg-white/[0.1] text-[12px] font-medium text-white cursor-pointer"
+              >
+                Invite
+              </button>
+            </div>
           </div>
-          <div className="flex items-center justify-between pt-1">
-            <button
-              type="button"
-              onClick={() => handleExportMonthLog("json")}
-              className="py-1.5 text-[11px] text-[#86868b] hover:text-white transition-colors cursor-pointer"
-            >
-              Download JSON
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                openWhatsAppShare(
-                  buildProgressShareText({
-                    name: profile.name,
-                    username: profile.username,
-                    monthPrefix: monthStats.monthPrefix,
-                    monthEffort: monthStats.monthEffort,
-                    activeDays: monthStats.activeDaysThisMonth,
-                    streak: monthStats.currentStreak,
-                  })
-                )
-              }
-              className="py-1.5 text-[12px] font-medium text-[#10e760] hover:underline flex items-center gap-1.5 cursor-pointer"
-            >
-              <MessageCircle className="w-3.5 h-3.5" />
-              Share via WhatsApp
-            </button>
+
+          <div className="px-4 py-3 flex items-center justify-between gap-2">
+            <span className="flex items-center gap-3 text-[14px] font-medium text-white">
+              <Download className="w-4 h-4 text-[#86868b]" />
+              <span>
+                Export{" "}
+                <span className="text-[12px] font-normal text-[#86868b] tabular-nums">
+                  ({monthStats.monthPrefix})
+                </span>
+              </span>
+            </span>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                disabled={copyingLog}
+                onClick={handleCopyMonthLog}
+                className="px-2.5 py-1.5 rounded-full bg-[#1c1c1e] hover:bg-white/[0.1] text-[12px] font-medium text-white cursor-pointer"
+              >
+                {copyingLog ? "Copied" : "Copy"}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleExportMonthLog("csv")}
+                className="px-2.5 py-1.5 rounded-full bg-[#1c1c1e] hover:bg-white/[0.1] text-[12px] font-medium text-white cursor-pointer"
+              >
+                CSV
+              </button>
+              <button
+                type="button"
+                onClick={() => handleExportMonthLog("json")}
+                className="px-2.5 py-1.5 rounded-full bg-[#1c1c1e] hover:bg-white/[0.1] text-[12px] font-medium text-[#86868b] hover:text-white cursor-pointer"
+              >
+                JSON
+              </button>
+            </div>
           </div>
-          <button
-            type="button"
-            onClick={() =>
-              openWhatsAppShare(buildInviteShareText(profile.name, profile.username))
-            }
-            className="w-full h-10 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-[12px] font-medium text-[#d1d1d6] flex items-center justify-center gap-2 cursor-pointer"
-          >
-            <MessageCircle className="w-3.5 h-3.5 text-[#10e760]" />
-            Invite Friend on WhatsApp
-          </button>
         </div>
+      </div>
 
-        {/* Profile & Body Metrics */}
-        <div className="apple-card divide-y divide-white/[0.06]">
+      {/* Preferences & Body Metrics */}
+      <div className="space-y-2">
+        <div className="apple-section-label px-1">Preferences</div>
+        <div className="apple-card divide-y divide-white/[0.06] overflow-hidden">
           <button
             type="button"
             onClick={openEditProfile}
@@ -488,7 +491,7 @@ export function ProfileTab({
             </span>
             <span className="flex items-center gap-1.5 text-[12px] text-[#86868b] tabular-nums">
               {formatHeight(profile.heightCm, profile.heightUnit)} · {profile.activeStatus}
-              <ChevronRight className="w-4 h-4 text-[#525257]" />
+              <ChevronRight className="w-4 h-4 text-[#636366]" />
             </span>
           </button>
 
@@ -504,49 +507,43 @@ export function ProfileTab({
               <Scale className="w-4 h-4 text-[#86868b]" />
               Weight
             </span>
-            <span className="flex items-center gap-1.5 text-[13px] font-medium text-[#10e760] tabular-nums">
+            <span className="flex items-center gap-1.5 text-[13px] font-medium text-[#30d158] tabular-nums">
               {latestWeight ? formatWeight(latestWeight.weightKg, profile.weightUnit) : "Add"}
-              <ChevronRight className="w-4 h-4 text-[#525257]" />
+              <ChevronRight className="w-4 h-4 text-[#636366]" />
             </span>
           </button>
 
           {/* Units Selection */}
-          <div className="px-4 py-3.5 flex items-center justify-between gap-3">
+          <div className="px-4 py-3 flex items-center justify-between gap-3">
             <span className="text-[14px] font-medium text-white">Units</span>
             <div className="flex items-center gap-2">
-              <div className="flex bg-black border border-white/10 rounded-lg p-0.5">
+              <div className="apple-segmented w-[92px]">
                 {(["kg", "lb"] as WeightUnit[]).map((u) => (
                   <button
                     key={u}
                     type="button"
+                    data-active={profile.weightUnit === u}
                     onClick={() =>
                       handleQuickPatch({ weightUnit: u }, `Weight unit set to ${u}`)
                     }
-                    className={`px-2.5 py-1 rounded-md text-[11px] font-semibold cursor-pointer ${
-                      profile.weightUnit === u
-                        ? "bg-white text-black"
-                        : "text-[#86868b] hover:text-white"
-                    }`}
+                    className="apple-segmented-btn h-7"
                   >
                     {u}
                   </button>
                 ))}
               </div>
-              <div className="flex bg-black border border-white/10 rounded-lg p-0.5">
+              <div className="apple-segmented w-[112px]">
                 {(["cm", "ft-in"] as HeightUnit[]).map((u) => (
                   <button
                     key={u}
                     type="button"
+                    data-active={profile.heightUnit === u}
                     onClick={() =>
                       handleQuickPatch({ heightUnit: u }, `Height unit set to ${u}`)
                     }
-                    className={`px-2.5 py-1 rounded-md text-[11px] font-semibold cursor-pointer ${
-                      profile.heightUnit === u
-                        ? "bg-white text-black"
-                        : "text-[#86868b] hover:text-white"
-                    }`}
+                    className="apple-segmented-btn h-7"
                   >
-                    {u}
+                    {u === "ft-in" ? "ft/in" : "cm"}
                   </button>
                 ))}
               </div>
@@ -554,9 +551,9 @@ export function ProfileTab({
           </div>
 
           {/* Appearance */}
-          <div className="px-4 py-3.5 flex items-center justify-between gap-3">
+          <div className="px-4 py-3 flex items-center justify-between gap-3">
             <span className="text-[14px] font-medium text-white">Appearance</span>
-            <div className="flex bg-black border border-white/10 rounded-xl p-0.5 gap-0.5">
+            <div className="apple-segmented w-[198px]">
               {(
                 [
                   { id: "system", label: "Auto", icon: Monitor },
@@ -567,12 +564,9 @@ export function ProfileTab({
                 <button
                   key={id}
                   type="button"
+                  data-active={themePref === id}
                   onClick={() => handleThemeChange(id)}
-                  className={`px-2.5 py-1.5 rounded-lg text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer ${
-                    themePref === id
-                      ? "bg-white text-black"
-                      : "text-[#86868b] hover:text-white"
-                  }`}
+                  className="apple-segmented-btn h-7"
                 >
                   <Icon className="w-3 h-3" />
                   {label}
@@ -581,11 +575,11 @@ export function ProfileTab({
             </div>
           </div>
 
-          {/* Haptic Feedback Toggle */}
+          {/* Haptic Feedback */}
           <div className="px-4 py-3.5 flex items-center justify-between gap-3">
             <div>
-              <span className="text-[14px] font-medium text-white">Haptic Feedback</span>
-              <p className="text-[11px] text-[#86868b] mt-0.5">
+              <div className="text-[14px] font-medium text-white">Haptic Feedback</div>
+              <p className="text-[12px] text-[#86868b] mt-0.5">
                 Tactile tap on supported phones
               </p>
             </div>
@@ -600,17 +594,15 @@ export function ProfileTab({
               <span className="ios-switch-thumb" />
             </button>
           </div>
-        </div>
 
-        {/* Privacy Switch */}
-        <div className="apple-card p-4">
-          <div className="flex items-center justify-between gap-4">
+          {/* Privacy Switch */}
+          <div className="px-4 py-3.5 flex items-center justify-between gap-4">
             <div className="min-w-0">
               <div className="text-[14px] font-medium text-white">
-                Share workout details
+                Share Workout Details
               </div>
               <p className="text-[12px] text-[#86868b] mt-0.5 leading-snug">
-                When on, friends can also see your logged exercises, weights, reps, and cardio on your profile grid. Weight, height, and activity level always stay private.
+                Let friends view exercises, sets, and reps on your grid. Bodyweight always stays private.
               </p>
             </div>
             <button
@@ -632,9 +624,12 @@ export function ProfileTab({
             </button>
           </div>
         </div>
+      </div>
 
-        {/* Exercises, Notifications, Admin & Sign Out */}
-        <div className="apple-card divide-y divide-white/[0.06]">
+      {/* App & Account */}
+      <div className="space-y-2">
+        <div className="apple-section-label px-1">Account</div>
+        <div className="apple-card divide-y divide-white/[0.06] overflow-hidden">
           <button
             type="button"
             onClick={() => setLibraryOpen(true)}
@@ -642,9 +637,9 @@ export function ProfileTab({
           >
             <span className="flex items-center gap-3 text-[14px] font-medium text-white">
               <Dumbbell className="w-4 h-4 text-[#86868b]" />
-              Exercises &amp; Muscle Groups
+              Exercise Library
             </span>
-            <ChevronRight className="w-4 h-4 text-[#525257]" />
+            <ChevronRight className="w-4 h-4 text-[#636366]" />
           </button>
 
           <button
@@ -660,7 +655,7 @@ export function ProfileTab({
               {notificationSettings.dailyPromptEnabled
                 ? notificationSettings.dailyPromptTime
                 : "Off"}
-              <ChevronRight className="w-4 h-4 text-[#525257]" />
+              <ChevronRight className="w-4 h-4 text-[#636366]" />
             </span>
           </button>
 
@@ -680,9 +675,9 @@ export function ProfileTab({
                   : !gymLocation.enabled
                   ? `${gymLocation.name} · Paused`
                   : geoStatus === "denied" || geoStatus === "error"
-                  ? `${gymLocation.name} · Location off`
+                  ? `${gymLocation.name} · Off`
                   : `${gymLocation.name} · ${gymLocation.radiusMeters}m`}
-                <ChevronRight className="w-4 h-4 text-[#525257] shrink-0" />
+                <ChevronRight className="w-4 h-4 text-[#636366] shrink-0" />
               </span>
             </button>
           )}
@@ -692,11 +687,11 @@ export function ProfileTab({
               href="/admin"
               className="w-full px-4 py-3.5 flex items-center justify-between hover:bg-white/[0.02] transition-colors"
             >
-              <span className="flex items-center gap-3 text-[14px] font-medium text-[#10e760]">
+              <span className="flex items-center gap-3 text-[14px] font-medium text-[#30d158]">
                 <Shield className="w-4 h-4" />
                 Admin Console
               </span>
-              <ChevronRight className="w-4 h-4 text-[#525257]" />
+              <ChevronRight className="w-4 h-4 text-[#636366]" />
             </Link>
           )}
 
@@ -709,16 +704,14 @@ export function ProfileTab({
               <LogOut className="w-4 h-4" />
               Sign Out
             </span>
-            <span className="text-[11px] text-[#525257] truncate max-w-[160px]">
+            <span className="text-[12px] text-[#636366] truncate max-w-[160px]">
               {profile.email}
             </span>
           </button>
         </div>
-
-        <div className="pt-2 text-center text-[11px] text-[#525257]">
-          Developed by Ifleon
-        </div>
       </div>
+
+      <div className="pt-1 text-center text-[11px] text-[#636366]">Ifleon</div>
 
       <ShareCardSheet
         open={shareCardOpen}
@@ -727,61 +720,58 @@ export function ProfileTab({
         onToast={onToast}
       />
 
-      {/* Edit Profile Sheet (Unit-aware Height + Live Username Hint) */}
+      {/* Edit Profile Sheet (Native iOS Inset-Grouped Rows) */}
       <BottomSheet
         open={editProfileOpen}
         onClose={() => setEditProfileOpen(false)}
         title="Profile & Metrics"
       >
-        <div className="space-y-3.5">
-          <div>
-            <label className="block text-[11px] text-[#86868b] mb-1">Name</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full h-11 px-3.5 rounded-xl bg-black border border-white/12 text-white text-[14px] focus:outline-none focus:border-[#10e760]"
-            />
-          </div>
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="text-[11px] text-[#86868b]">Username</label>
-              <span
-                className={`text-[10px] font-mono ${
-                  usernameCheck.valid ? "text-[#10e760]" : "text-amber-400"
+        <div className="space-y-4">
+          <div className="rounded-2xl bg-[#1c1c1e] divide-y divide-white/[0.06] overflow-hidden">
+            <div className="px-4 h-11 flex items-center justify-between gap-3">
+              <label className="text-[14px] text-[#86868b] shrink-0">Name</label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="flex-1 bg-transparent text-right text-[14px] font-medium text-white focus:outline-none"
+              />
+            </div>
+
+            <div className="px-4 py-2.5">
+              <div className="flex items-center justify-between gap-3">
+                <label className="text-[14px] text-[#86868b] shrink-0">Username</label>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="flex-1 bg-transparent text-right text-[14px] font-medium text-white focus:outline-none"
+                />
+              </div>
+              <div
+                className={`text-right text-[11px] mt-0.5 tabular-nums ${
+                  usernameCheck.valid ? "text-[#30d158]" : "text-amber-400"
                 }`}
               >
                 {usernameCheck.hint}
-              </span>
+              </div>
             </div>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full h-11 px-3.5 rounded-xl bg-black border border-white/12 text-white text-[14px] focus:outline-none focus:border-[#10e760]"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-2.5">
-            {profile.heightUnit === "cm" ? (
-              <div>
-                <label className="block text-[11px] text-[#86868b] mb-1">
-                  Height (cm)
-                </label>
+
+            <div className="px-4 h-11 flex items-center justify-between gap-3">
+              <label className="text-[14px] text-[#86868b] shrink-0">
+                Height ({profile.heightUnit === "ft-in" ? "ft / in" : "cm"})
+              </label>
+              {profile.heightUnit === "cm" ? (
                 <input
                   type="number"
                   inputMode="numeric"
                   value={heightCm}
                   onChange={(e) => setHeightCm(e.target.value)}
-                  className="w-full h-11 px-3.5 rounded-xl bg-black border border-white/12 text-white text-[14px] tabular-nums focus:outline-none focus:border-[#10e760]"
+                  className="w-24 bg-transparent text-right text-[14px] font-medium text-white tabular-nums focus:outline-none"
                 />
-              </div>
-            ) : (
-              <div>
-                <label className="block text-[11px] text-[#86868b] mb-1">
-                  Height (ft / in)
-                </label>
-                <div className="grid grid-cols-2 gap-1.5">
-                  <div className="relative">
+              ) : (
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
                     <input
                       type="number"
                       inputMode="numeric"
@@ -789,13 +779,11 @@ export function ProfileTab({
                       max={8}
                       value={heightFeet}
                       onChange={(e) => setHeightFeet(e.target.value)}
-                      className="w-full h-11 pl-3 pr-6 rounded-xl bg-black border border-white/12 text-white text-[14px] tabular-nums focus:outline-none focus:border-[#10e760]"
+                      className="w-10 bg-black/40 rounded-lg h-8 text-center text-[14px] text-white tabular-nums focus:outline-none"
                     />
-                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-[#86868b]">
-                      ft
-                    </span>
+                    <span className="text-[11px] text-[#86868b]">ft</span>
                   </div>
-                  <div className="relative">
+                  <div className="flex items-center gap-1">
                     <input
                       type="number"
                       inputMode="numeric"
@@ -803,197 +791,214 @@ export function ProfileTab({
                       max={11}
                       value={heightInches}
                       onChange={(e) => setHeightInches(e.target.value)}
-                      className="w-full h-11 pl-3 pr-6 rounded-xl bg-black border border-white/12 text-white text-[14px] tabular-nums focus:outline-none focus:border-[#10e760]"
+                      className="w-10 bg-black/40 rounded-lg h-8 text-center text-[14px] text-white tabular-nums focus:outline-none"
                     />
-                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-[#86868b]">
-                      in
-                    </span>
+                    <span className="text-[11px] text-[#86868b]">in</span>
                   </div>
                 </div>
-              </div>
-            )}
-            <div>
-              <label className="block text-[11px] text-[#86868b] mb-1">
-                Age (optional)
-              </label>
+              )}
+            </div>
+
+            <div className="px-4 h-11 flex items-center justify-between gap-3">
+              <label className="text-[14px] text-[#86868b] shrink-0">Activity</label>
+              <select
+                value={activeStatus}
+                onChange={(e) => setActiveStatus(e.target.value as ActiveStatus)}
+                className="bg-transparent text-right text-[14px] text-white focus:outline-none cursor-pointer"
+              >
+                <option value="Sedentary" className="bg-[#1c1c1e] text-white">
+                  Sedentary
+                </option>
+                <option value="Lightly active" className="bg-[#1c1c1e] text-white">
+                  Lightly active
+                </option>
+                <option value="Moderately active" className="bg-[#1c1c1e] text-white">
+                  Moderately active
+                </option>
+                <option value="Very active" className="bg-[#1c1c1e] text-white">
+                  Very active
+                </option>
+              </select>
+            </div>
+
+            <div className="px-4 h-11 flex items-center justify-between gap-3">
+              <label className="text-[14px] text-[#86868b] shrink-0">Age</label>
               <input
                 type="number"
                 inputMode="numeric"
                 value={age}
                 onChange={(e) => setAge(e.target.value)}
-                className="w-full h-11 px-3.5 rounded-xl bg-black border border-white/12 text-white text-[14px] tabular-nums focus:outline-none focus:border-[#10e760]"
+                placeholder="Optional"
+                className="w-24 bg-transparent text-right text-[14px] text-white placeholder:text-[#636366] tabular-nums focus:outline-none"
               />
             </div>
-          </div>
-          <div>
-            <label className="block text-[11px] text-[#86868b] mb-1">
-              Activity Status
-            </label>
-            <select
-              value={activeStatus}
-              onChange={(e) => setActiveStatus(e.target.value as ActiveStatus)}
-              className="w-full h-11 px-3 rounded-xl bg-black border border-white/12 text-white text-[14px] focus:outline-none focus:border-[#10e760]"
-            >
-              <option value="Sedentary">Sedentary</option>
-              <option value="Lightly active">Lightly active</option>
-              <option value="Moderately active">Moderately active</option>
-              <option value="Very active">Very active</option>
-            </select>
-          </div>
-          <div className="grid grid-cols-2 gap-2.5">
-            <div>
-              <label className="block text-[11px] text-[#86868b] mb-1">
-                Sex (optional)
-              </label>
+
+            <div className="px-4 h-11 flex items-center justify-between gap-3">
+              <label className="text-[14px] text-[#86868b] shrink-0">Sex</label>
               <select
                 value={sex}
                 onChange={(e) => setSex(e.target.value)}
-                className="w-full h-11 px-3 rounded-xl bg-black border border-white/12 text-white text-[14px] focus:outline-none focus:border-[#10e760]"
+                className="bg-transparent text-right text-[14px] text-white focus:outline-none cursor-pointer"
               >
-                <option value="">Prefer not to say</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-                <option value="Other">Other</option>
+                <option value="" className="bg-[#1c1c1e] text-white">
+                  Prefer not to say
+                </option>
+                <option value="Male" className="bg-[#1c1c1e] text-white">
+                  Male
+                </option>
+                <option value="Female" className="bg-[#1c1c1e] text-white">
+                  Female
+                </option>
+                <option value="Other" className="bg-[#1c1c1e] text-white">
+                  Other
+                </option>
               </select>
             </div>
-            <div>
-              <label className="block text-[11px] text-[#86868b] mb-1">
-                Goal (optional)
-              </label>
+
+            <div className="px-4 h-11 flex items-center justify-between gap-3">
+              <label className="text-[14px] text-[#86868b] shrink-0">Goal</label>
               <input
                 type="text"
                 value={goal}
                 onChange={(e) => setGoal(e.target.value)}
-                className="w-full h-11 px-3 rounded-xl bg-black border border-white/12 text-white text-[14px] focus:outline-none focus:border-[#10e760]"
+                placeholder="Optional"
+                className="flex-1 bg-transparent text-right text-[14px] text-white placeholder:text-[#636366] focus:outline-none"
               />
             </div>
           </div>
+
           <button
             type="button"
             disabled={savingProfile}
             onClick={handleSaveProfile}
-            className="w-full h-12 rounded-2xl bg-[#10e760] hover:bg-[#25d658] text-black font-semibold text-[15px] cursor-pointer mt-2"
+            className="w-full h-12 rounded-full bg-[#30d158] hover:opacity-90 text-black font-semibold text-[15px] cursor-pointer"
           >
             {savingProfile ? "Saving..." : "Save"}
           </button>
         </div>
       </BottomSheet>
 
-      {/* Log & Manage Weight Sheet (Add + Edit + Delete) */}
+      {/* Log & Manage Weight Sheet */}
       <BottomSheet
         open={weightSheetOpen}
         onClose={() => setWeightSheetOpen(false)}
-        title="Log Weight"
-        subtitle="Stored privately. Edit or remove mistyped entries below."
+        title="Body Weight"
+        subtitle="Stored privately. Edit or remove entries anytime."
       >
         <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              inputMode="decimal"
-              step="0.1"
-              value={newWeight}
-              onChange={(e) => setNewWeight(e.target.value)}
-              placeholder={
-                latestWeight
-                  ? String(
-                      profile.weightUnit === "lb"
-                        ? Number((latestWeight.weightKg * 2.20462).toFixed(1))
-                        : latestWeight.weightKg
-                    )
-                  : "74.5"
-              }
-              className="flex-1 h-12 px-4 rounded-xl bg-black border border-white/12 text-white text-[18px] font-semibold tabular-nums focus:outline-none focus:border-[#10e760]"
-            />
-            <span className="text-[14px] text-[#86868b] font-medium w-8">
-              {profile.weightUnit}
-            </span>
+          <div className="px-4 h-12 rounded-2xl bg-[#1c1c1e] flex items-center justify-between gap-2">
+            <span className="text-[14px] text-[#86868b]">Today</span>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                inputMode="decimal"
+                step="0.1"
+                value={newWeight}
+                onChange={(e) => setNewWeight(e.target.value)}
+                placeholder={
+                  latestWeight
+                    ? String(
+                        profile.weightUnit === "lb"
+                          ? Number((latestWeight.weightKg * 2.20462).toFixed(1))
+                          : latestWeight.weightKg
+                      )
+                    : "74.5"
+                }
+                className="w-28 bg-transparent text-right text-white text-[18px] font-semibold placeholder:text-[#636366] tabular-nums focus:outline-none"
+              />
+              <span className="text-[14px] text-[#86868b] font-medium">
+                {profile.weightUnit}
+              </span>
+            </div>
           </div>
+
           <button
             type="button"
             disabled={savingWeight || !newWeight}
             onClick={handleLogWeight}
-            className="w-full h-12 rounded-2xl bg-[#10e760] hover:bg-[#25d658] disabled:opacity-40 text-black font-semibold text-[15px] cursor-pointer"
+            className="w-full h-12 rounded-full bg-[#30d158] hover:opacity-90 disabled:opacity-40 text-black font-semibold text-[15px] cursor-pointer"
           >
-            {savingWeight ? "Saving..." : "Save Weight"}
+            {savingWeight ? "Saving..." : "Log Weight"}
           </button>
 
           {state.weightLogs.length > 0 && (
-            <div className="space-y-1.5 pt-2 border-t border-white/[0.06] max-h-56 overflow-y-auto no-scrollbar">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
-                Recent Entries
+            <div className="space-y-2 pt-1">
+              <div className="text-[12px] font-medium text-[#86868b] px-0.5">
+                History
               </div>
-              {[...state.weightLogs]
-                .reverse()
-                .slice(0, 12)
-                .map((w) => {
-                  const isEditing = editingWeightId === w.id;
-                  const displayVal =
-                    profile.weightUnit === "lb"
-                      ? Number((w.weightKg * 2.20462).toFixed(1))
-                      : Number(w.weightKg.toFixed(1));
-                  return (
-                    <div
-                      key={w.id}
-                      className="flex items-center justify-between gap-2 text-[13px] py-1.5"
-                    >
-                      <span className="text-[#86868b] tabular-nums">{w.date}</span>
-                      {isEditing ? (
-                        <div className="flex items-center gap-1.5">
-                          <input
-                            type="number"
-                            inputMode="decimal"
-                            step="0.1"
-                            value={editingWeightVal}
-                            onChange={(e) => setEditingWeightVal(e.target.value)}
-                            className="w-20 h-8 px-2 rounded-lg bg-black border border-[#10e760] text-white text-[13px] tabular-nums focus:outline-none"
-                          />
-                          <button
-                            type="button"
-                            aria-label="Save weight edit"
-                            onClick={() => handleSaveEditedWeight(w.id)}
-                            className="w-7 h-7 rounded-lg bg-[#10e760] text-black flex items-center justify-center cursor-pointer"
-                          >
-                            <Check className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            aria-label="Cancel weight edit"
-                            onClick={() => setEditingWeightId(null)}
-                            className="w-7 h-7 rounded-lg bg-white/[0.08] text-white flex items-center justify-center cursor-pointer"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-white font-medium tabular-nums mr-1">
-                            {formatWeight(w.weightKg, profile.weightUnit)}
-                          </span>
-                          <button
-                            type="button"
-                            aria-label={`Edit weight on ${w.date}`}
-                            onClick={() => {
-                              setEditingWeightId(w.id);
-                              setEditingWeightVal(String(displayVal));
-                            }}
-                            className="w-7 h-7 rounded-lg text-[#6e6e73] hover:text-white hover:bg-white/[0.06] flex items-center justify-center cursor-pointer"
-                          >
-                            <Pencil className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            aria-label={`Delete weight on ${w.date}`}
-                            onClick={() => handleDeleteWeight(w.id)}
-                            className="w-7 h-7 rounded-lg text-[#6e6e73] hover:text-red-400 hover:bg-white/[0.06] flex items-center justify-center cursor-pointer"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+              <div className="rounded-2xl bg-[#1c1c1e] divide-y divide-white/[0.06] max-h-56 overflow-y-auto no-scrollbar">
+                {[...state.weightLogs]
+                  .reverse()
+                  .slice(0, 12)
+                  .map((w) => {
+                    const isEditing = editingWeightId === w.id;
+                    const displayVal =
+                      profile.weightUnit === "lb"
+                        ? Number((w.weightKg * 2.20462).toFixed(1))
+                        : Number(w.weightKg.toFixed(1));
+                    return (
+                      <div
+                        key={w.id}
+                        className="px-4 py-2.5 flex items-center justify-between gap-2 text-[13px]"
+                      >
+                        <span className="text-[#86868b] tabular-nums">{w.date}</span>
+                        {isEditing ? (
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="number"
+                              inputMode="decimal"
+                              step="0.1"
+                              value={editingWeightVal}
+                              onChange={(e) => setEditingWeightVal(e.target.value)}
+                              className="w-20 h-8 px-2 rounded-lg bg-black/50 text-white text-[13px] tabular-nums focus:outline-none"
+                            />
+                            <button
+                              type="button"
+                              aria-label="Save weight edit"
+                              onClick={() => handleSaveEditedWeight(w.id)}
+                              className="w-7 h-7 rounded-full bg-[#30d158] text-black flex items-center justify-center cursor-pointer"
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              aria-label="Cancel weight edit"
+                              onClick={() => setEditingWeightId(null)}
+                              className="w-7 h-7 rounded-full bg-white/[0.08] text-white flex items-center justify-center cursor-pointer"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1">
+                            <span className="text-white font-medium tabular-nums mr-1.5">
+                              {formatWeight(w.weightKg, profile.weightUnit)}
+                            </span>
+                            <button
+                              type="button"
+                              aria-label={`Edit weight on ${w.date}`}
+                              onClick={() => {
+                                setEditingWeightId(w.id);
+                                setEditingWeightVal(String(displayVal));
+                              }}
+                              className="w-7 h-7 rounded-full text-[#636366] hover:text-white flex items-center justify-center cursor-pointer"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              aria-label={`Delete weight on ${w.date}`}
+                              onClick={() => handleDeleteWeight(w.id)}
+                              className="w-7 h-7 rounded-full text-[#636366] hover:text-red-400 flex items-center justify-center cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+              </div>
             </div>
           )}
         </div>
@@ -1003,13 +1008,13 @@ export function ProfileTab({
       <BottomSheet
         open={libraryOpen}
         onClose={() => setLibraryOpen(false)}
-        title="My Library"
-        subtitle="Add your own exercises or hide defaults."
+        title="Exercise Library"
+        subtitle="Add custom exercises or hide defaults."
       >
-        <div className="space-y-5">
+        <div className="space-y-4">
           <div className="space-y-2">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
-              Add Exercise
+            <div className="text-[12px] font-medium text-[#86868b] px-0.5">
+              Custom Exercise
             </div>
             <div className="flex gap-2">
               <input
@@ -1017,12 +1022,12 @@ export function ProfileTab({
                 value={newExName}
                 onChange={(e) => setNewExName(e.target.value)}
                 placeholder="Exercise name"
-                className="flex-1 h-10 px-3 rounded-xl bg-black border border-white/12 text-white text-[13px] focus:outline-none focus:border-[#10e760]"
+                className="apple-input flex-1 h-10 px-3.5 text-[13px]"
               />
               <select
                 value={newExGroup}
                 onChange={(e) => setNewExGroup(e.target.value)}
-                className="h-10 px-2.5 rounded-xl bg-black border border-white/12 text-white text-[12px]"
+                className="apple-input h-10 px-2.5 text-[12px]"
               >
                 {state.visibleMuscleGroups.map((mg) => (
                   <option key={mg.id} value={mg.name}>
@@ -1040,7 +1045,7 @@ export function ProfileTab({
                   );
                   setNewExName("");
                 }}
-                className="w-10 h-10 rounded-xl bg-[#10e760] text-black flex items-center justify-center shrink-0 cursor-pointer"
+                className="w-10 h-10 rounded-full bg-[#30d158] text-black flex items-center justify-center shrink-0 cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
               </button>
@@ -1048,8 +1053,8 @@ export function ProfileTab({
           </div>
 
           <div className="space-y-2">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
-              Add Muscle Group
+            <div className="text-[12px] font-medium text-[#86868b] px-0.5">
+              Custom Muscle Group
             </div>
             <div className="flex gap-2">
               <input
@@ -1057,7 +1062,7 @@ export function ProfileTab({
                 value={newGroupName}
                 onChange={(e) => setNewGroupName(e.target.value)}
                 placeholder="e.g. Forearms, Mobility"
-                className="flex-1 h-10 px-3 rounded-xl bg-black border border-white/12 text-white text-[13px] focus:outline-none focus:border-[#10e760]"
+                className="apple-input flex-1 h-10 px-3.5 text-[13px]"
               />
               <button
                 type="button"
@@ -1069,7 +1074,7 @@ export function ProfileTab({
                   );
                   setNewGroupName("");
                 }}
-                className="w-10 h-10 rounded-xl bg-white/[0.1] hover:bg-white/[0.16] text-white flex items-center justify-center shrink-0 cursor-pointer"
+                className="w-10 h-10 rounded-full bg-[#1c1c1e] hover:bg-white/[0.12] text-white flex items-center justify-center shrink-0 cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
               </button>
@@ -1077,47 +1082,51 @@ export function ProfileTab({
           </div>
 
           {personalExercises.length > 0 && (
-            <div className="space-y-1.5">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
-                Personal Exercises
+            <div className="space-y-2">
+              <div className="text-[12px] font-medium text-[#86868b] px-0.5">
+                Your Exercises
               </div>
-              {personalExercises.map((ex) => (
-                <div
-                  key={ex.id}
-                  className="px-3 py-2 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-between text-[13px]"
-                >
-                  <div>
-                    <span className="text-white font-medium">{ex.name}</span>
-                    <span className="text-[#86868b] text-[11px] ml-2">{ex.muscleGroup}</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleLibraryAction(
-                        { action: "delete-exercise", id: ex.id },
-                        `Deleted ${ex.name}`
-                      )
-                    }
-                    className="text-[#86868b] hover:text-red-400 cursor-pointer"
+              <div className="rounded-2xl bg-[#1c1c1e] divide-y divide-white/[0.06] overflow-hidden">
+                {personalExercises.map((ex) => (
+                  <div
+                    key={ex.id}
+                    className="px-4 py-2.5 flex items-center justify-between text-[13px]"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              ))}
+                    <div>
+                      <span className="text-white font-medium">{ex.name}</span>
+                      <span className="text-[#86868b] text-[11px] ml-2">
+                        {ex.muscleGroup}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleLibraryAction(
+                          { action: "delete-exercise", id: ex.id },
+                          `Deleted ${ex.name}`
+                        )
+                      }
+                      className="text-[#86868b] hover:text-red-400 cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
-          <div className="space-y-1.5">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
-              Default Library
+          <div className="space-y-2">
+            <div className="text-[12px] font-medium text-[#86868b] px-0.5">
+              Defaults
             </div>
-            <div className="space-y-1 max-h-56 overflow-y-auto no-scrollbar">
+            <div className="rounded-2xl bg-[#1c1c1e] divide-y divide-white/[0.06] max-h-56 overflow-y-auto no-scrollbar">
               {defaultExercises.map((ex) => {
                 const isHidden = hiddenSet.has(ex.id);
                 return (
                   <div
                     key={ex.id}
-                    className="px-3 py-2 rounded-xl bg-white/[0.02] border border-white/[0.05] flex items-center justify-between text-[13px]"
+                    className="px-4 py-2.5 flex items-center justify-between text-[13px]"
                   >
                     <div className={isHidden ? "opacity-40 line-through" : ""}>
                       <span className="text-white">{ex.name}</span>
@@ -1151,28 +1160,28 @@ export function ProfileTab({
         open={notifOpen}
         onClose={() => setNotifOpen(false)}
         title="Notifications"
-        subtitle="Training reminders pause automatically on Rest days."
+        subtitle="Reminders pause automatically on Rest days."
       >
         <div className="space-y-4">
-          <div className="p-3 rounded-2xl bg-white/[0.03] border border-white/[0.07] flex items-start gap-2.5 text-[12px] text-[#86868b]">
-            <Smartphone className="w-4 h-4 text-[#10e760] shrink-0 mt-0.5" />
+          <div className="p-3.5 rounded-2xl bg-[#1c1c1e] flex items-start gap-2.5 text-[12px] text-[#86868b]">
+            <Smartphone className="w-4 h-4 text-[#30d158] shrink-0 mt-0.5" />
             <span>
-              On iPhone, add Honest Reps to your Home Screen in Safari to enable web push notifications.
+              On iPhone, add Honest Reps to your Home Screen in Safari to enable push notifications.
             </span>
           </div>
 
-          <div className="space-y-3">
-            <div className="flex items-center justify-between gap-3">
+          <div className="rounded-2xl bg-[#1c1c1e] divide-y divide-white/[0.06] overflow-hidden">
+            <div className="px-4 py-3 flex items-center justify-between gap-3">
               <div>
-                <div className="text-[14px] font-medium text-white">Daily Training Prompt</div>
-                <div className="text-[11px] text-[#86868b]">Suppressed on Rest days</div>
+                <div className="text-[14px] font-medium text-white">Daily Prompt</div>
+                <div className="text-[11px] text-[#86868b]">Paused on Rest days</div>
               </div>
               <div className="flex items-center gap-2">
                 <input
                   type="time"
                   value={notificationSettings.dailyPromptTime}
                   onChange={(e) => handleNotifPatch({ dailyPromptTime: e.target.value })}
-                  className="bg-black border border-white/12 rounded-lg px-2 py-1 text-[12px] text-white tabular-nums"
+                  className="bg-black/40 rounded-lg px-2 py-1 text-[12px] text-white tabular-nums focus:outline-none"
                 />
                 <button
                   type="button"
@@ -1189,9 +1198,9 @@ export function ProfileTab({
               </div>
             </div>
 
-            <div className="flex items-center justify-between gap-3">
+            <div className="px-4 py-3 flex items-center justify-between gap-3">
               <div>
-                <div className="text-[14px] font-medium text-white">Weekly Weight Check</div>
+                <div className="text-[14px] font-medium text-white">Weekly Weight</div>
                 <div className="text-[11px] text-[#86868b]">Once per week</div>
               </div>
               <div className="flex items-center gap-2">
@@ -1199,7 +1208,7 @@ export function ProfileTab({
                   type="time"
                   value={notificationSettings.weeklyWeightTime}
                   onChange={(e) => handleNotifPatch({ weeklyWeightTime: e.target.value })}
-                  className="bg-black border border-white/12 rounded-lg px-2 py-1 text-[12px] text-white tabular-nums"
+                  className="bg-black/40 rounded-lg px-2 py-1 text-[12px] text-white tabular-nums focus:outline-none"
                 />
                 <button
                   type="button"
@@ -1216,10 +1225,10 @@ export function ProfileTab({
               </div>
             </div>
 
-            <div className="flex items-center justify-between gap-3">
+            <div className="px-4 py-3 flex items-center justify-between gap-3">
               <div>
                 <div className="text-[14px] font-medium text-white">Friend Requests</div>
-                <div className="text-[11px] text-[#86868b]">Falls back to Google email</div>
+                <div className="text-[11px] text-[#86868b]">Email fallback</div>
               </div>
               <button
                 type="button"
@@ -1235,11 +1244,9 @@ export function ProfileTab({
               </button>
             </div>
 
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <div className="text-[14px] font-medium text-white">
-                  Streak &amp; Month Summaries
-                </div>
+            <div className="px-4 py-3 flex items-center justify-between gap-3">
+              <div className="text-[14px] font-medium text-white">
+                Streak &amp; Month Summaries
               </div>
               <button
                 type="button"
@@ -1255,32 +1262,32 @@ export function ProfileTab({
               </button>
             </div>
 
-            <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between">
-              <span className="text-[13px] font-medium text-white">Quiet Hours</span>
+            <div className="px-4 py-3 flex items-center justify-between">
+              <span className="text-[14px] font-medium text-white">Quiet Hours</span>
               <div className="flex items-center gap-1.5">
                 <input
                   type="time"
                   value={notificationSettings.quietHoursStart}
                   onChange={(e) => handleNotifPatch({ quietHoursStart: e.target.value })}
-                  className="bg-black border border-white/12 rounded-lg px-2 py-1 text-[12px] text-white tabular-nums"
+                  className="bg-black/40 rounded-lg px-2 py-1 text-[12px] text-white tabular-nums focus:outline-none"
                 />
                 <span className="text-[11px] text-[#86868b]">to</span>
                 <input
                   type="time"
                   value={notificationSettings.quietHoursEnd}
                   onChange={(e) => handleNotifPatch({ quietHoursEnd: e.target.value })}
-                  className="bg-black border border-white/12 rounded-lg px-2 py-1 text-[12px] text-white tabular-nums"
+                  className="bg-black/40 rounded-lg px-2 py-1 text-[12px] text-white tabular-nums focus:outline-none"
                 />
               </div>
             </div>
 
-            <div className="pt-2 flex items-center justify-between gap-2">
+            <div className="px-4 py-3 flex items-center justify-between gap-2">
               <div>
-                <div className="text-[13px] font-medium text-white">Web Push</div>
+                <div className="text-[14px] font-medium text-white">Web Push</div>
                 <div className="text-[11px] text-[#86868b]">
                   {typeof window !== "undefined" && "Notification" in window
                     ? `Permission: ${Notification.permission}`
-                    : "Browser notifications"}
+                    : "Browser alerts"}
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -1307,7 +1314,7 @@ export function ProfileTab({
                         sent ? "success" : "error"
                       );
                     }}
-                    className="px-2.5 py-1 rounded-full bg-white/[0.07] hover:bg-white/[0.12] text-[11px] font-medium text-[#10e760] cursor-pointer"
+                    className="px-2.5 py-1 rounded-full bg-white/[0.08] hover:bg-white/[0.14] text-[11px] font-medium text-[#30d158] cursor-pointer"
                   >
                     Test
                   </button>
@@ -1330,7 +1337,7 @@ export function ProfileTab({
                       await handleNotifPatch({ pushSubscribed: true });
                       await showLocalNotification(
                         "Honest Reps",
-                        "Notifications enabled cleanly.",
+                        "Notifications enabled.",
                         "enable-notification"
                       );
                       onToast("Notifications enabled");

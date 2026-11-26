@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { ActiveStatus, HeightUnit, WeightUnit } from "@/lib/types";
 import { apiGetState, apiUpdateProfile } from "@/lib/client-engine";
 import {
@@ -26,6 +27,7 @@ export default function OnboardingPage() {
   const [age, setAge] = useState("");
   const [sex, setSex] = useState("");
   const [goal, setGoal] = useState("");
+  const [showOptional, setShowOptional] = useState(false);
   const [saving, setSaving] = useState(false);
   const [checking, setChecking] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +39,6 @@ export default function OnboardingPage() {
           router.replace("/signin/");
           return;
         }
-        // Strictly one onboarding per email: already-onboarded users never re-enter onboarding
         if (d.profile?.onboardingComplete) {
           router.replace("/");
           return;
@@ -136,242 +137,248 @@ export default function OnboardingPage() {
   if (checking) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="bg-black px-5 py-3 rounded-2xl">
-          <img
-            src="/icons/logo-wordmark.png"
-            alt="honestreps.com"
-            className="h-12 w-auto object-contain animate-pulse"
-          />
-        </div>
+        <span className="text-[13px] text-[#86868b]">Loading...</span>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center px-5 py-10 pt-safe pb-safe">
-      <form
-        onSubmit={handleSubmit}
-        className="w-full max-w-md apple-card p-6 space-y-5"
-      >
-        <div className="flex items-center gap-3">
-          <span className="brand-icon-box w-10 h-10 rounded-xl p-1.5 flex items-center justify-center shrink-0">
+      <form onSubmit={handleSubmit} className="w-full max-w-[400px] space-y-6">
+        {/* Clean Apple Health-style Header */}
+        <div className="text-center space-y-2">
+          <div className="brand-icon-box w-12 h-12 mx-auto rounded-2xl p-1.5 flex items-center justify-center">
             <img
               src="/icons/logo-icon.png"
               alt="Honest Reps"
               className="w-full h-full object-contain"
             />
-          </span>
-          <div>
-            <h1 className="text-[22px] font-bold tracking-[-0.02em] text-white">
-              Set Up Profile
-            </h1>
-            <p className="text-[12px] text-[#86868b]">
-              Private body metrics stay visible only to you.
-            </p>
+          </div>
+          <h1 className="text-[26px] font-semibold tracking-[-0.03em] text-white">
+            Set Up Profile
+          </h1>
+          <p className="text-[13px] text-[#86868b]">
+            Body metrics stay private and are never shared with friends.
+          </p>
+        </div>
+
+        {/* Unit Segmented Controls */}
+        <div className="grid grid-cols-2 gap-2.5">
+          <div className="apple-segmented">
+            {(["kg", "lb"] as WeightUnit[]).map((u) => (
+              <button
+                key={u}
+                type="button"
+                data-active={weightUnit === u}
+                onClick={() => handleSwitchWeightUnit(u)}
+                className="apple-segmented-btn h-8"
+              >
+                {u}
+              </button>
+            ))}
+          </div>
+          <div className="apple-segmented">
+            {(["cm", "ft-in"] as HeightUnit[]).map((u) => (
+              <button
+                key={u}
+                type="button"
+                data-active={heightUnit === u}
+                onClick={() => handleSwitchHeightUnit(u)}
+                className="apple-segmented-btn h-8"
+              >
+                {u === "ft-in" ? "ft / in" : "cm"}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Units */}
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-[12px] text-[#86868b]">Units</span>
-          <div className="flex gap-2">
-            <div className="flex bg-black border border-white/10 rounded-lg p-0.5">
-              {(["kg", "lb"] as WeightUnit[]).map((u) => (
-                <button
-                  key={u}
-                  type="button"
-                  onClick={() => handleSwitchWeightUnit(u)}
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold cursor-pointer ${
-                    weightUnit === u ? "bg-white text-black" : "text-[#86868b]"
-                  }`}
-                >
-                  {u}
-                </button>
-              ))}
-            </div>
-            <div className="flex bg-black border border-white/10 rounded-lg p-0.5">
-              {(["cm", "ft-in"] as HeightUnit[]).map((u) => (
-                <button
-                  key={u}
-                  type="button"
-                  onClick={() => handleSwitchHeightUnit(u)}
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold cursor-pointer ${
-                    heightUnit === u ? "bg-white text-black" : "text-[#86868b]"
-                  }`}
-                >
-                  {u}
-                </button>
-              ))}
-            </div>
+        {/* Native iOS Inset Grouped Rows */}
+        <div className="apple-card divide-y divide-white/[0.06] overflow-hidden">
+          <div className="px-4 h-12 flex items-center justify-between gap-3">
+            <label className="text-[14px] text-[#86868b] shrink-0">Name</label>
+            <input
+              required
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Your name"
+              className="flex-1 bg-transparent text-right text-[15px] text-white placeholder:text-[#636366] focus:outline-none"
+            />
           </div>
-        </div>
 
-        <div className="space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-[11px] text-[#86868b] mb-1">Display Name</label>
-              <input
-                required
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Your name"
-                className="w-full h-11 px-3.5 rounded-xl bg-black border border-white/12 text-white text-[14px] focus:outline-none focus:border-[#10e760]"
-              />
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-[11px] text-[#86868b]">Username</label>
-                <span
-                  className={`text-[10px] font-mono ${
-                    usernameCheck.valid ? "text-[#10e760]" : "text-[#86868b]"
-                  }`}
-                >
-                  {usernameCheck.hint}
-                </span>
-              </div>
+          <div className="px-4 py-2.5">
+            <div className="flex items-center justify-between gap-3">
+              <label className="text-[14px] text-[#86868b] shrink-0">Username</label>
               <input
                 required
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="e.g. alex_lifts"
-                className="w-full h-11 px-3.5 rounded-xl bg-black border border-white/12 text-white text-[14px] focus:outline-none focus:border-[#10e760]"
+                placeholder="alex_lifts"
+                className="flex-1 bg-transparent text-right text-[15px] text-white placeholder:text-[#636366] focus:outline-none"
               />
+            </div>
+            <div
+              className={`text-right text-[11px] mt-0.5 tabular-nums ${
+                usernameCheck.valid ? "text-[#30d158]" : "text-[#86868b]"
+              }`}
+            >
+              {usernameCheck.hint}
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-[11px] text-[#86868b] mb-1">
-                Weight ({weightUnit})
-              </label>
+          <div className="px-4 h-12 flex items-center justify-between gap-3">
+            <label className="text-[14px] text-[#86868b] shrink-0">
+              Weight ({weightUnit})
+            </label>
+            <input
+              required
+              type="number"
+              inputMode="decimal"
+              step="0.1"
+              value={weight}
+              onChange={(e) => setWeight(e.target.value)}
+              className="w-28 bg-transparent text-right text-[15px] font-medium text-white tabular-nums focus:outline-none"
+            />
+          </div>
+
+          <div className="px-4 h-12 flex items-center justify-between gap-3">
+            <label className="text-[14px] text-[#86868b] shrink-0">
+              Height ({heightUnit === "ft-in" ? "ft / in" : "cm"})
+            </label>
+            {heightUnit === "cm" ? (
               <input
                 required
                 type="number"
-                inputMode="decimal"
-                step="0.1"
-                value={weight}
-                onChange={(e) => setWeight(e.target.value)}
-                className="w-full h-11 px-3.5 rounded-xl bg-black border border-white/12 text-white text-[14px] tabular-nums focus:outline-none focus:border-[#10e760]"
+                inputMode="numeric"
+                value={heightCm}
+                onChange={(e) => setHeightCm(e.target.value)}
+                className="w-28 bg-transparent text-right text-[15px] font-medium text-white tabular-nums focus:outline-none"
               />
-            </div>
-
-            {heightUnit === "cm" ? (
-              <div>
-                <label className="block text-[11px] text-[#86868b] mb-1">
-                  Height (cm)
-                </label>
-                <input
-                  required
-                  type="number"
-                  inputMode="numeric"
-                  value={heightCm}
-                  onChange={(e) => setHeightCm(e.target.value)}
-                  className="w-full h-11 px-3.5 rounded-xl bg-black border border-white/12 text-white text-[14px] tabular-nums focus:outline-none focus:border-[#10e760]"
-                />
-              </div>
             ) : (
-              <div>
-                <label className="block text-[11px] text-[#86868b] mb-1">
-                  Height (ft / in)
-                </label>
-                <div className="grid grid-cols-2 gap-1.5">
-                  <div className="relative">
-                    <input
-                      required
-                      type="number"
-                      inputMode="numeric"
-                      min={3}
-                      max={8}
-                      value={heightFeet}
-                      onChange={(e) => setHeightFeet(e.target.value)}
-                      className="w-full h-11 pl-3 pr-6 rounded-xl bg-black border border-white/12 text-white text-[14px] tabular-nums focus:outline-none focus:border-[#10e760]"
-                    />
-                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] text-[#86868b]">
-                      ft
-                    </span>
-                  </div>
-                  <div className="relative">
-                    <input
-                      required
-                      type="number"
-                      inputMode="numeric"
-                      min={0}
-                      max={11}
-                      value={heightInches}
-                      onChange={(e) => setHeightInches(e.target.value)}
-                      className="w-full h-11 pl-3 pr-6 rounded-xl bg-black border border-white/12 text-white text-[14px] tabular-nums focus:outline-none focus:border-[#10e760]"
-                    />
-                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] text-[#86868b]">
-                      in
-                    </span>
-                  </div>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
+                  <input
+                    required
+                    type="number"
+                    inputMode="numeric"
+                    min={3}
+                    max={8}
+                    value={heightFeet}
+                    onChange={(e) => setHeightFeet(e.target.value)}
+                    className="w-10 bg-[#1c1c1e] rounded-lg h-8 text-center text-[14px] font-medium text-white tabular-nums focus:outline-none"
+                  />
+                  <span className="text-[12px] text-[#86868b]">ft</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <input
+                    required
+                    type="number"
+                    inputMode="numeric"
+                    min={0}
+                    max={11}
+                    value={heightInches}
+                    onChange={(e) => setHeightInches(e.target.value)}
+                    className="w-10 bg-[#1c1c1e] rounded-lg h-8 text-center text-[14px] font-medium text-white tabular-nums focus:outline-none"
+                  />
+                  <span className="text-[12px] text-[#86868b]">in</span>
                 </div>
               </div>
             )}
           </div>
 
-          <div>
-            <label className="block text-[11px] text-[#86868b] mb-1">Active Status</label>
+          <div className="px-4 h-12 flex items-center justify-between gap-3">
+            <label className="text-[14px] text-[#86868b] shrink-0">Activity Level</label>
             <select
               value={activeStatus}
               onChange={(e) => setActiveStatus(e.target.value as ActiveStatus)}
-              className="w-full h-11 px-3 rounded-xl bg-black border border-white/12 text-white text-[14px] focus:outline-none focus:border-[#10e760]"
+              className="bg-transparent text-right text-[14px] font-medium text-white focus:outline-none cursor-pointer"
             >
-              <option value="Sedentary">Sedentary</option>
-              <option value="Lightly active">Lightly active</option>
-              <option value="Moderately active">Moderately active</option>
-              <option value="Very active">Very active</option>
+              <option value="Sedentary" className="bg-[#1c1c1e] text-white">
+                Sedentary
+              </option>
+              <option value="Lightly active" className="bg-[#1c1c1e] text-white">
+                Lightly active
+              </option>
+              <option value="Moderately active" className="bg-[#1c1c1e] text-white">
+                Moderately active
+              </option>
+              <option value="Very active" className="bg-[#1c1c1e] text-white">
+                Very active
+              </option>
             </select>
-          </div>
-
-          {/* Optional FR-3 fields */}
-          <div className="grid grid-cols-2 gap-3 pt-1">
-            <div>
-              <label className="block text-[11px] text-[#86868b] mb-1">Age (optional)</label>
-              <input
-                type="number"
-                inputMode="numeric"
-                value={age}
-                onChange={(e) => setAge(e.target.value)}
-                className="w-full h-11 px-3.5 rounded-xl bg-black border border-white/12 text-white text-[14px] tabular-nums focus:outline-none focus:border-[#10e760]"
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] text-[#86868b] mb-1">Sex (optional)</label>
-              <select
-                value={sex}
-                onChange={(e) => setSex(e.target.value)}
-                className="w-full h-11 px-3 rounded-xl bg-black border border-white/12 text-white text-[14px] focus:outline-none focus:border-[#10e760]"
-              >
-                <option value="">Skip</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-[11px] text-[#86868b] mb-1">Goal (optional)</label>
-            <input
-              type="text"
-              value={goal}
-              onChange={(e) => setGoal(e.target.value)}
-              placeholder="e.g. Consistency"
-              className="w-full h-11 px-3.5 rounded-xl bg-black border border-white/12 text-white text-[14px] focus:outline-none focus:border-[#10e760]"
-            />
           </div>
         </div>
 
-        {error && <p className="text-[12px] text-amber-400">{error}</p>}
+        {/* Progressive Disclosure: Optional Details */}
+        <div className="apple-card overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setShowOptional((v) => !v)}
+            className="w-full px-4 h-11 flex items-center justify-between text-[13px] text-[#86868b] hover:text-white transition-colors cursor-pointer"
+          >
+            <span>Optional details (Age, Sex, Goal)</span>
+            {showOptional ? (
+              <ChevronUp className="w-4 h-4" />
+            ) : (
+              <ChevronDown className="w-4 h-4" />
+            )}
+          </button>
+
+          {showOptional && (
+            <div className="divide-y divide-white/[0.06] border-t border-white/[0.06]">
+              <div className="px-4 h-11 flex items-center justify-between gap-3">
+                <label className="text-[14px] text-[#86868b]">Age</label>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  value={age}
+                  onChange={(e) => setAge(e.target.value)}
+                  placeholder="Optional"
+                  className="w-28 bg-transparent text-right text-[14px] text-white placeholder:text-[#636366] tabular-nums focus:outline-none"
+                />
+              </div>
+              <div className="px-4 h-11 flex items-center justify-between gap-3">
+                <label className="text-[14px] text-[#86868b]">Sex</label>
+                <select
+                  value={sex}
+                  onChange={(e) => setSex(e.target.value)}
+                  className="bg-transparent text-right text-[14px] text-white focus:outline-none cursor-pointer"
+                >
+                  <option value="" className="bg-[#1c1c1e] text-white">
+                    Skip
+                  </option>
+                  <option value="Male" className="bg-[#1c1c1e] text-white">
+                    Male
+                  </option>
+                  <option value="Female" className="bg-[#1c1c1e] text-white">
+                    Female
+                  </option>
+                  <option value="Other" className="bg-[#1c1c1e] text-white">
+                    Other
+                  </option>
+                </select>
+              </div>
+              <div className="px-4 h-11 flex items-center justify-between gap-3">
+                <label className="text-[14px] text-[#86868b]">Goal</label>
+                <input
+                  type="text"
+                  value={goal}
+                  onChange={(e) => setGoal(e.target.value)}
+                  placeholder="e.g. Consistency"
+                  className="flex-1 bg-transparent text-right text-[14px] text-white placeholder:text-[#636366] focus:outline-none"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {error && <p className="text-[12px] text-amber-400 text-center">{error}</p>}
 
         <button
           type="submit"
           disabled={saving}
-          className="w-full h-12 rounded-2xl bg-[#10e760] hover:bg-[#25d658] disabled:opacity-50 text-black font-semibold text-[15px] cursor-pointer"
+          className="w-full h-12 rounded-full bg-[#30d158] hover:opacity-90 disabled:opacity-50 text-black font-semibold text-[15px] transition-opacity cursor-pointer"
         >
           {saving ? "Saving..." : "Continue"}
         </button>

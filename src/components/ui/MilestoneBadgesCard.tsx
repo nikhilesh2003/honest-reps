@@ -623,21 +623,21 @@ export function MilestoneBadgesCard({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b] flex items-center gap-1.5">
-            <Trophy className="w-3.5 h-3.5 text-[#10e760]" />
-            <span>Awards &amp; Medals</span>
+          <div className="apple-section-label flex items-center gap-1.5">
+            <Trophy className="w-3.5 h-3.5 text-[#30d158]" />
+            <span>Awards</span>
           </div>
-          <div className="text-[17px] font-bold text-white tabular-nums mt-0.5">
-            {summary.totalUnlocked} of {summary.totalAvailable} Earned
+          <div className="text-[17px] font-semibold text-white tabular-nums mt-0.5">
+            {summary.totalUnlocked} of {summary.totalAvailable} earned
           </div>
         </div>
 
-        <span className="text-[12px] font-mono font-medium text-[#86868b] tabular-nums">
+        <span className="text-[12px] font-medium text-[#86868b] tabular-nums">
           {Math.round((summary.totalUnlocked / Math.max(1, summary.totalAvailable)) * 100)}%
         </span>
       </div>
 
-      {/* Apple-Style Minimal Category Pills */}
+      {/* Category Pills */}
       <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
         {categoryTabs.map((c) => {
           const active = activeFilter === c.key;
@@ -649,10 +649,10 @@ export function MilestoneBadgesCard({
                 triggerHaptic("selection");
                 setFilter(c.key);
               }}
-              className={`shrink-0 px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all cursor-pointer border whitespace-nowrap ${
+              className={`shrink-0 px-3 py-1.5 rounded-full text-[12px] font-medium transition-colors cursor-pointer whitespace-nowrap ${
                 active
-                  ? "bg-white text-black border-white shadow-sm"
-                  : "bg-white/[0.04] text-[#86868b] border-white/[0.06] hover:text-white"
+                  ? "bg-white text-black font-semibold"
+                  : "bg-[#1c1c1e] text-[#86868b] hover:text-white"
               }`}
             >
               {c.label}
@@ -663,10 +663,10 @@ export function MilestoneBadgesCard({
 
       {/* Highest Weight + Plate Stack Readout on Plates Tab */}
       {activeFilter === "plates" && (
-        <div className="px-3 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] space-y-1 text-[11px]">
+        <div className="px-3.5 py-2.5 rounded-xl bg-[#1c1c1e] space-y-1 text-[12px]">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-[#86868b]">Highest Weight Lifted</span>
-            <span className="font-mono font-semibold text-white tabular-nums">
+            <span className="text-[#86868b]">Highest Weight</span>
+            <span className="font-semibold text-white tabular-nums">
               {summary.highestWeightKg > 0
                 ? `${summary.highestWeightKg} kg${
                     summary.highestWeightExercise ? ` · ${summary.highestWeightExercise}` : ""
@@ -675,9 +675,9 @@ export function MilestoneBadgesCard({
             </span>
           </div>
           {plateBreakdown && (
-            <div className="flex items-center justify-between gap-2 text-[10px]">
-              <span className="text-[#6e6e73]">Plate Stack Breakdown</span>
-              <span className="font-mono font-semibold text-[#10e760] tabular-nums">
+            <div className="flex items-center justify-between gap-2 text-[11px]">
+              <span className="text-[#86868b]">Plate Stack</span>
+              <span className="font-medium text-[#30d158] tabular-nums">
                 {plateBreakdown}
               </span>
             </div>
@@ -826,13 +826,13 @@ export function MilestoneBadgesCard({
                   )}
                 </div>
 
-                <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.07] text-left space-y-2">
-                  <div className="flex items-center justify-between text-[12px] font-mono tabular-nums">
-                    <span className="text-[#86868b]">Goal Progress</span>
+                <div className="p-4 rounded-2xl bg-[#1c1c1e] text-left space-y-2.5">
+                  <div className="flex items-center justify-between text-[12px] tabular-nums">
+                    <span className="text-[#86868b]">Progress</span>
                     <span
                       className={
                         selectedBadge.isUnlocked
-                          ? "text-[#10e760] font-semibold"
+                          ? "text-[#30d158] font-semibold"
                           : "text-white font-semibold"
                       }
                     >
@@ -841,25 +841,25 @@ export function MilestoneBadgesCard({
                     </span>
                   </div>
 
-                  <div className="w-full h-2 rounded-full bg-white/[0.08] overflow-hidden">
+                  <div className="w-full h-1.5 rounded-full bg-white/[0.08] overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all duration-500 ${
-                        selectedBadge.isUnlocked ? "bg-[#10e760]" : "bg-white/40"
+                        selectedBadge.isUnlocked ? "bg-[#30d158]" : "bg-white/40"
                       }`}
                       style={{ width: `${selectedBadge.progressPercent}%` }}
                     />
                   </div>
 
-                  <div className="flex items-center justify-between text-[11px] pt-1">
+                  <div className="flex items-center justify-between text-[11px] pt-0.5">
                     <span className="text-[#86868b]">Status</span>
                     {selectedBadge.isUnlocked ? (
-                      <span className="text-[#10e760] font-semibold flex items-center gap-1">
+                      <span className="text-[#30d158] font-semibold flex items-center gap-1">
                         <Check className="w-3.5 h-3.5 stroke-[3]" />
                         <span>Unlocked</span>
                       </span>
                     ) : (
                       <span className="text-amber-400 font-medium">
-                        {selectedBadge.progressPercent}% Completed
+                        {selectedBadge.progressPercent}% complete
                       </span>
                     )}
                   </div>
@@ -868,7 +868,7 @@ export function MilestoneBadgesCard({
                 <button
                   type="button"
                   onClick={() => setSelectedBadge(null)}
-                  className="w-full h-11 rounded-2xl bg-white/[0.08] hover:bg-white/[0.14] text-white font-semibold text-[14px] transition-colors cursor-pointer"
+                  className="w-full h-11 rounded-full bg-[#1c1c1e] hover:bg-white/[0.12] text-white font-medium text-[14px] transition-colors cursor-pointer"
                 >
                   Done
                 </button>

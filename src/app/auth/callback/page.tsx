@@ -13,7 +13,8 @@ export default function AuthCallbackPage() {
   const getPostAuthTarget = (profile: { onboardingComplete: boolean }): string => {
     if (!profile.onboardingComplete) return "/onboarding/";
     try {
-      const pending = typeof window !== "undefined" ? localStorage.getItem("hr_pending_invite_user") : null;
+      const pending =
+        typeof window !== "undefined" ? localStorage.getItem("hr_pending_invite_user") : null;
       if (pending) {
         return `/invite?u=${encodeURIComponent(pending)}&auto_send=1`;
       }
@@ -39,7 +40,6 @@ export default function AuthCallbackPage() {
           return;
         }
 
-        // 1. Check if session already exists (prevents React StrictMode double-exchange)
         const { data: existingData } = await supabase.auth.getUser();
         if (existingData?.user?.email) {
           const profile = await apiCompleteGoogleAuth(
@@ -51,12 +51,11 @@ export default function AuthCallbackPage() {
           return;
         }
 
-        // 2. Exchange PKCE code once
         const code = url.searchParams.get("code");
         if (code) {
-          const { data: exData, error: exErr } = await supabase.auth.exchangeCodeForSession(code);
+          const { data: exData, error: exErr } =
+            await supabase.auth.exchangeCodeForSession(code);
           if (exErr) {
-            // Re-check in case another concurrent call just completed the exchange
             const { data: retryData } = await supabase.auth.getUser();
             if (retryData?.user?.email) {
               const profile = await apiCompleteGoogleAuth(
@@ -81,7 +80,6 @@ export default function AuthCallbackPage() {
           }
         }
 
-        // 3. Handle implicit hash tokens if returned
         if (window.location.hash && window.location.hash.includes("access_token=")) {
           const hashParams = new URLSearchParams(window.location.hash.slice(1));
           const access_token = hashParams.get("access_token");
@@ -117,25 +115,25 @@ export default function AuthCallbackPage() {
 
   return (
     <div className="min-h-screen bg-black flex flex-col items-center justify-center gap-4 px-6 text-center">
-      <div className="bg-black px-5 py-3 rounded-2xl flex items-center justify-center">
+      <div className="brand-icon-box w-12 h-12 rounded-2xl p-1.5 flex items-center justify-center">
         <img
-          src="/icons/logo-wordmark.png"
-          alt="honestreps.com"
-          className="h-11 w-auto object-contain"
+          src="/icons/logo-icon.png"
+          alt="Honest Reps"
+          className="w-full h-full object-contain"
         />
       </div>
       {errorMsg ? (
-        <div className="apple-card p-5 max-w-sm w-full space-y-3">
+        <div className="apple-card p-5 max-w-xs w-full space-y-3">
           <p className="text-[13px] text-amber-400">{errorMsg}</p>
           <Link
             href="/signin/"
-            className="inline-flex items-center justify-center w-full h-11 rounded-2xl bg-white text-black font-semibold text-[14px]"
+            className="inline-flex items-center justify-center w-full h-11 rounded-full bg-white text-black font-semibold text-[14px]"
           >
             Back to Sign In
           </Link>
         </div>
       ) : (
-        <p className="text-[13px] text-[#86868b]">Signing in with Google...</p>
+        <p className="text-[13px] text-[#86868b]">Signing in...</p>
       )}
     </div>
   );

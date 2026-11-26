@@ -9,7 +9,6 @@ import {
   ChevronRight,
   Share2,
   MessageCircle,
-  Dumbbell,
   Trophy,
   Search,
   ArrowLeft,
@@ -190,7 +189,7 @@ export function FriendsTab({
         action === "accept"
           ? "Friend added"
           : action === "remove"
-          ? "Sent request cancelled"
+          ? "Request cancelled"
           : "Request declined"
       );
       onRefresh();
@@ -210,7 +209,7 @@ export function FriendsTab({
     );
     if (res.ok) {
       setNudgedIds((prev) => new Set(prev).add(friendUserId));
-      onToast(`Sent fist bump to @${friendUsername}`);
+      onToast(`Sent bump to @${friendUsername}`);
     } else {
       onToast(res.error || "Already bumped recently", "error");
     }
@@ -230,29 +229,29 @@ export function FriendsTab({
 
   return (
     <div className="space-y-4 pb-6">
-      <div className="flex items-center justify-between pt-1">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-[28px] font-bold tracking-[-0.03em] text-white leading-tight">
+          <h1 className="text-[30px] font-semibold tracking-[-0.03em] text-white leading-tight">
             Friends
           </h1>
           <div className="text-[12px] text-[#86868b] mt-0.5 tabular-nums">
             {friendsList.length} connected
-            {inGymCount > 0 ? ` · ${inGymCount} in the gym now` : ""}
+            {inGymCount > 0 ? ` · ${inGymCount} in gym` : ""}
           </div>
         </div>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={onNavigateLeaderboard}
-            className="px-3 py-2 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] text-[12px] font-medium text-white flex items-center gap-1.5 cursor-pointer"
+            className="px-3.5 py-2 rounded-full bg-[#111113] border border-white/[0.06] hover:border-white/15 text-[12px] font-medium text-white flex items-center gap-1.5 cursor-pointer"
           >
-            <Trophy className="w-3.5 h-3.5 text-[#10e760]" />
-            Board
+            <Trophy className="w-3.5 h-3.5 text-[#30d158]" />
+            Ranks
           </button>
           <button
             type="button"
             onClick={() => setAddOpen(true)}
-            className="px-3.5 py-2 rounded-full bg-[#10e760]/15 hover:bg-[#10e760]/25 border border-[#10e760]/40 text-[12px] font-semibold text-[#10e760] flex items-center gap-1.5 cursor-pointer"
+            className="px-3.5 py-2 rounded-full bg-[#30d158] text-black text-[12px] font-semibold flex items-center gap-1.5 cursor-pointer"
           >
             <UserPlus className="w-3.5 h-3.5" />
             Add
@@ -262,81 +261,82 @@ export function FriendsTab({
 
       {/* Pending Incoming Requests */}
       {state.incomingRequests.length > 0 && (
-        <div className="apple-card p-4 space-y-2.5">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
+        <div className="space-y-2">
+          <div className="apple-section-label px-0.5">
             Requests ({state.incomingRequests.length})
           </div>
-          {state.incomingRequests.map((req) => (
-            <div
-              key={req.friendshipId}
-              className="flex items-center justify-between gap-3 py-1"
-            >
-              <div>
-                <div className="text-[14px] font-medium text-white">{req.name}</div>
-                <div className="text-[12px] text-[#86868b]">@{req.username}</div>
+          <div className="apple-card px-4 py-1 divide-y divide-white/[0.06]">
+            {state.incomingRequests.map((req) => (
+              <div
+                key={req.friendshipId}
+                className="py-3 flex items-center justify-between gap-3"
+              >
+                <div>
+                  <div className="text-[14px] font-medium text-white">{req.name}</div>
+                  <div className="text-[12px] text-[#86868b]">@{req.username}</div>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => handleRequestAction(req.friendshipId, "accept")}
+                    className="px-3.5 h-8 rounded-full bg-[#30d158] text-black text-[12px] font-semibold cursor-pointer"
+                  >
+                    Accept
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleRequestAction(req.friendshipId, "decline")}
+                    aria-label="Decline"
+                    className="w-8 h-8 rounded-full bg-[#1c1c1e] text-[#86868b] hover:text-white flex items-center justify-center cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => handleRequestAction(req.friendshipId, "accept")}
-                  className="px-3 h-8 rounded-full bg-[#10e760] text-black text-[12px] font-semibold flex items-center gap-1 cursor-pointer"
-                >
-                  <Check className="w-3.5 h-3.5" />
-                  Accept
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleRequestAction(req.friendshipId, "decline")}
-                  aria-label="Decline"
-                  className="w-8 h-8 rounded-full bg-white/[0.07] text-[#86868b] hover:text-white flex items-center justify-center cursor-pointer"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 
-      {/* Pending Outgoing Requests with Cancel Option */}
+      {/* Pending Outgoing Requests */}
       {state.outgoingRequests.length > 0 && (
-        <div className="apple-card p-4 space-y-2">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
-            Sent Requests
-          </div>
-          {state.outgoingRequests.map((req) => (
-            <div
-              key={req.friendshipId}
-              className="flex items-center justify-between gap-2 text-[13px] py-0.5"
-            >
-              <span className="text-[#d1d1d6] truncate">
-                {req.name} <span className="text-[#525257]">@{req.username}</span>
-              </span>
-              <button
-                type="button"
-                onClick={() => handleRequestAction(req.friendshipId, "remove")}
-                className="px-2.5 py-1 rounded-full bg-white/[0.06] hover:bg-red-500/20 text-[11px] text-[#86868b] hover:text-red-300 font-medium transition-colors cursor-pointer shrink-0"
+        <div className="space-y-2">
+          <div className="apple-section-label px-0.5">Sent</div>
+          <div className="apple-card px-4 py-1 divide-y divide-white/[0.06]">
+            {state.outgoingRequests.map((req) => (
+              <div
+                key={req.friendshipId}
+                className="py-2.5 flex items-center justify-between gap-2 text-[13px]"
               >
-                Cancel
-              </button>
-            </div>
-          ))}
+                <span className="text-[#d1d1d6] truncate">
+                  {req.name} <span className="text-[#86868b]">@{req.username}</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleRequestAction(req.friendshipId, "remove")}
+                  className="px-2.5 py-1 rounded-full bg-[#1c1c1e] hover:bg-red-500/20 text-[11px] text-[#86868b] hover:text-red-300 font-medium transition-colors cursor-pointer shrink-0"
+                >
+                  Cancel
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
       {/* Connected Friends List */}
       {friendsList.length === 0 ? (
-        <div className="apple-card p-6 text-center space-y-3">
-          <div className="text-[15px] font-semibold text-white">No friends connected yet</div>
-          <p className="text-[12px] text-[#86868b]">
-            Add a friend by @username or share your invite link to see when they are in the gym and view their activity grid.
+        <div className="apple-card p-7 text-center space-y-3">
+          <div className="text-[16px] font-semibold text-white">No friends yet</div>
+          <p className="text-[13px] text-[#86868b] max-w-[260px] mx-auto leading-relaxed">
+            Add gym friends by @username or share your invite link to compare honest effort.
           </p>
           <button
             type="button"
             onClick={() => setAddOpen(true)}
-            className="px-4 h-10 rounded-xl bg-[#10e760] text-black font-semibold text-[13px] cursor-pointer"
+            className="px-5 h-10 rounded-full bg-[#30d158] text-black font-semibold text-[13px] cursor-pointer"
           >
-            Invite or Add Friend
+            Add Friend
           </button>
         </div>
       ) : (
@@ -354,7 +354,7 @@ export function FriendsTab({
             return (
               <div
                 key={entry.userId}
-                className="p-4 flex items-center justify-between gap-2.5 hover:bg-white/[0.02] transition-colors"
+                className="px-4 py-3.5 flex items-center justify-between gap-2.5 hover:bg-white/[0.02] transition-colors"
               >
                 <button
                   type="button"
@@ -362,33 +362,33 @@ export function FriendsTab({
                   className="flex items-center gap-3 min-w-0 flex-1 text-left cursor-pointer"
                 >
                   <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 border ${
+                    className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-[14px] font-semibold ${
                       entry.inGym
-                        ? "bg-[#10e760]/15 border-[#10e760]/60 text-[#10e760] shadow-[0_0_16px_rgba(16,231,96,0.35)]"
-                        : "bg-white/[0.05] border-white/[0.08] text-[#86868b]"
+                        ? "bg-[#30d158]/15 text-[#30d158] ring-1 ring-[#30d158]/50"
+                        : "bg-[#1c1c1e] text-[#f5f5f7]"
                     }`}
                   >
-                    <Dumbbell className="w-4 h-4" />
+                    {entry.name.slice(0, 1).toUpperCase()}
                   </div>
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[15px] font-semibold text-white truncate">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[15px] font-medium text-white truncate">
                         {entry.name}
                       </span>
-                      <span className="text-[11px] text-[#525257] truncate">
+                      <span className="text-[12px] text-[#86868b] truncate">
                         @{entry.username}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 mt-0.5 text-[11px]">
+                    <div className="flex items-center gap-1.5 mt-0.5 text-[12px]">
                       {entry.inGym ? (
-                        <span className="inline-flex items-center gap-1 text-[#10e760] font-semibold">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#10e760] animate-pulse" />
-                          In the Gym
+                        <span className="inline-flex items-center gap-1 text-[#30d158] font-medium">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#30d158]" />
+                          In gym
                         </span>
                       ) : (
-                        <span className="text-[#86868b]">Not in gym</span>
+                        <span className="text-[#86868b]">Away</span>
                       )}
-                      <span className="text-[#525257]">·</span>
+                      <span className="text-[#636366]">·</span>
                       <span className="text-[#86868b] tabular-nums">
                         {entry.currentStreak}d streak
                       </span>
@@ -404,17 +404,11 @@ export function FriendsTab({
                       onClick={() =>
                         handleFistBump(entry.userId, entry.username, entry.inGym)
                       }
-                      title={
+                      title={bumped ? "Bump sent" : "Send fist bump"}
+                      className={`h-7 px-2.5 rounded-full text-[11px] font-medium flex items-center gap-1 transition-colors cursor-pointer ${
                         bumped
-                          ? "Bump sent"
-                          : entry.inGym
-                          ? "Send live gym salute"
-                          : "Send fist bump for today's workout"
-                      }
-                      className={`h-7 px-2 rounded-full text-[10px] font-semibold flex items-center gap-1 border transition-colors cursor-pointer ${
-                        bumped
-                          ? "bg-[#10e760]/12 border-[#10e760]/30 text-[#10e760]"
-                          : "bg-white/[0.05] hover:bg-[#10e760]/15 border-white/[0.08] hover:border-[#10e760]/40 text-[#d1d1d6] hover:text-[#10e760]"
+                          ? "bg-[#30d158]/15 text-[#30d158]"
+                          : "bg-[#1c1c1e] hover:bg-white/[0.1] text-[#d1d1d6]"
                       }`}
                     >
                       {bumped ? (
@@ -424,7 +418,7 @@ export function FriendsTab({
                         </>
                       ) : (
                         <>
-                          <Zap className="w-3 h-3 text-[#10e760]" />
+                          <Zap className="w-3 h-3 text-[#30d158]" />
                           Bump
                         </>
                       )}
@@ -438,11 +432,11 @@ export function FriendsTab({
                         setScoreReason(buildLeaderboardScoreReason(entry, period))
                       }
                       title="Tap score to see why"
-                      className="px-2 py-1 rounded-xl hover:bg-white/[0.07] active:scale-95 transition-all text-right cursor-pointer"
+                      className="px-2 py-1 rounded-xl hover:bg-white/[0.06] active:scale-95 transition-all text-right cursor-pointer"
                     >
                       <span
-                        className={`text-[18px] font-bold tabular-nums ${
-                          isEst ? "text-amber-400" : "text-[#10e760]"
+                        className={`text-[18px] font-semibold tabular-nums ${
+                          isEst ? "text-amber-400" : "text-[#30d158]"
                         }`}
                       >
                         {score}
@@ -454,7 +448,7 @@ export function FriendsTab({
                       onClick={() =>
                         setScoreReason(buildLeaderboardScoreReason(entry, period))
                       }
-                      className="px-2 py-1 rounded-full text-[10px] font-medium bg-white/[0.05] text-[#86868b] border border-white/[0.08] cursor-pointer"
+                      className="px-2 py-1 text-[12px] font-medium text-[#86868b] cursor-pointer"
                     >
                       {entry.todayStatus === "Rest" ? "Rest" : "—"}
                     </button>
@@ -463,7 +457,7 @@ export function FriendsTab({
                     type="button"
                     onClick={() => openFriendDetail(entry.userId)}
                     aria-label={`View ${entry.name}`}
-                    className="p-1 text-[#525257] hover:text-white cursor-pointer"
+                    className="p-1 text-[#636366] hover:text-white cursor-pointer"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
@@ -482,7 +476,7 @@ export function FriendsTab({
         subtitle={
           selectedPreview
             ? `@${selectedPreview.username}`
-            : "Search by name or @username, preview profile, then connect."
+            : "Search by name or @username, or share your invite link."
         }
       >
         {selectedPreview ? (
@@ -490,56 +484,52 @@ export function FriendsTab({
             <button
               type="button"
               onClick={() => setSelectedPreview(null)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] text-[12px] font-medium text-white cursor-pointer"
+              className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[#30d158] cursor-pointer"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              Back to Search
+              Back to search
             </button>
 
-            <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] space-y-3">
+            <div className="p-4 rounded-2xl bg-[#1c1c1e] space-y-3.5">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-[#10e760]/15 border border-[#10e760]/30 flex items-center justify-center text-[16px] font-bold text-[#10e760] shrink-0">
+                <div className="w-12 h-12 rounded-full bg-[#30d158]/15 flex items-center justify-center text-[17px] font-semibold text-[#30d158] shrink-0">
                   {selectedPreview.name.slice(0, 1).toUpperCase()}
                 </div>
                 <div className="min-w-0">
                   <div className="text-[16px] font-semibold text-white truncate">
                     {selectedPreview.name}
                   </div>
-                  <div className="text-[12px] text-[#86868b] truncate">
+                  <div className="text-[13px] text-[#86868b] truncate">
                     @{selectedPreview.username}
                   </div>
                 </div>
               </div>
 
               {selectedPreview.goal && (
-                <div className="inline-flex items-center px-2.5 py-1 rounded-full bg-white/[0.05] border border-white/[0.08] text-[11px] font-medium text-white">
-                  Goal: {selectedPreview.goal}
+                <div className="text-[12px] text-[#d1d1d6]">
+                  Goal: <span className="text-white font-medium">{selectedPreview.goal}</span>
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-2 pt-1">
-                <div className="p-3 rounded-xl bg-black/40 border border-white/[0.06] text-center">
-                  <div className="text-[18px] font-bold text-[#10e760] tabular-nums">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="p-3 rounded-xl bg-black/35 text-center">
+                  <div className="text-[18px] font-semibold text-[#30d158] tabular-nums">
                     {loadingPreview ? "…" : `${selectedPreview.activeDays30d}d`}
                   </div>
-                  <div className="text-[10px] uppercase tracking-[0.06em] text-[#86868b] mt-0.5">
-                    Active (30d)
-                  </div>
+                  <div className="text-[11px] text-[#86868b] mt-0.5">Active (30d)</div>
                 </div>
-                <div className="p-3 rounded-xl bg-black/40 border border-white/[0.06] text-center">
-                  <div className="text-[18px] font-bold text-white tabular-nums">
+                <div className="p-3 rounded-xl bg-black/35 text-center">
+                  <div className="text-[18px] font-semibold text-white tabular-nums">
                     {loadingPreview ? "…" : selectedPreview.totalWorkouts}
                   </div>
-                  <div className="text-[10px] uppercase tracking-[0.06em] text-[#86868b] mt-0.5">
-                    Total Logs
-                  </div>
+                  <div className="text-[11px] text-[#86868b] mt-0.5">Total Logs</div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-black/40 border border-white/[0.06] text-[11px] text-[#86868b]">
+              <div className="flex items-center gap-2 text-[12px] text-[#86868b] pt-1 border-t border-white/[0.06]">
                 {selectedPreview.shareWorkoutDetails ? (
                   <>
-                    <Unlock className="w-3.5 h-3.5 text-[#10e760] shrink-0" />
+                    <Unlock className="w-3.5 h-3.5 text-[#30d158] shrink-0" />
                     <span>Shares workout details with friends</span>
                   </>
                 ) : (
@@ -556,7 +546,7 @@ export function FriendsTab({
                 type="button"
                 disabled={sendingReq}
                 onClick={() => handleSendRequest(selectedPreview.username)}
-                className="w-full h-11 rounded-xl bg-[#10e760] hover:bg-[#25d658] disabled:opacity-40 text-black font-semibold text-[14px] flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full h-11 rounded-full bg-[#30d158] disabled:opacity-40 text-black font-semibold text-[14px] flex items-center justify-center gap-2 cursor-pointer"
               >
                 <UserPlus className="w-4 h-4" />
                 {sendingReq ? "Sending..." : "Send Friend Request"}
@@ -564,8 +554,8 @@ export function FriendsTab({
             )}
 
             {selectedPreview.friendshipStatus === "pending_sent" && (
-              <div className="w-full h-11 rounded-xl bg-white/[0.05] border border-white/[0.08] text-[#86868b] font-semibold text-[13px] flex items-center justify-center">
-                Friend Request Sent
+              <div className="w-full h-11 rounded-full bg-[#1c1c1e] text-[#86868b] font-medium text-[13px] flex items-center justify-center">
+                Request Sent
               </div>
             )}
 
@@ -574,19 +564,16 @@ export function FriendsTab({
                 <button
                   type="button"
                   onClick={async () => {
-                    await handleRequestAction(
-                      selectedPreview.friendshipId!,
-                      "accept"
-                    );
+                    await handleRequestAction(selectedPreview.friendshipId!, "accept");
                     setSelectedPreview({
                       ...selectedPreview,
                       friendshipStatus: "accepted",
                     });
                   }}
-                  className="w-full h-11 rounded-xl bg-[#10e760] hover:bg-[#25d658] text-black font-semibold text-[14px] flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full h-11 rounded-full bg-[#30d158] text-black font-semibold text-[14px] flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <Check className="w-4 h-4" />
-                  Accept Friend Request
+                  Accept Request
                 </button>
               )}
 
@@ -598,36 +585,31 @@ export function FriendsTab({
                   setAddOpen(false);
                   void openFriendDetail(uid);
                 }}
-                className="w-full h-11 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] text-white font-semibold text-[14px] flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full h-11 rounded-full bg-[#1c1c1e] hover:bg-white/[0.12] text-white font-medium text-[14px] flex items-center justify-center gap-2 cursor-pointer"
               >
-                View Full Friend Profile
+                View Profile
                 <ChevronRight className="w-4 h-4" />
               </button>
             )}
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="block text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
-                Search Members
-              </label>
-              <div className="relative flex items-center">
-                <Search className="w-4 h-4 text-[#86868b] absolute left-3.5 pointer-events-none" />
-                <input
-                  type="text"
-                  value={usernameInput}
-                  onChange={(e) => setUsernameInput(e.target.value)}
-                  placeholder="Name, @username, or invite link..."
-                  className="w-full h-11 pl-10 pr-3.5 rounded-xl bg-black border border-white/12 text-white text-[14px] focus:outline-none focus:border-[#10e760]"
-                />
-              </div>
+            <div className="relative flex items-center">
+              <Search className="w-4 h-4 text-[#86868b] absolute left-3.5 pointer-events-none" />
+              <input
+                type="text"
+                value={usernameInput}
+                onChange={(e) => setUsernameInput(e.target.value)}
+                placeholder="Name, @username, or invite link"
+                className="apple-input w-full h-11 pl-10 pr-3.5 text-[14px]"
+              />
             </div>
 
             {usernameInput.trim().length > 0 && (
-              <div className="space-y-1.5 max-h-60 overflow-y-auto">
+              <div className="rounded-2xl bg-[#1c1c1e] divide-y divide-white/[0.06] max-h-60 overflow-y-auto no-scrollbar">
                 {searchingMembers ? (
                   <div className="py-5 text-center text-[12px] text-[#86868b]">
-                    Searching profiles...
+                    Searching...
                   </div>
                 ) : searchResults.length === 0 ? (
                   <div className="py-5 text-center text-[12px] text-[#86868b] space-y-2">
@@ -638,7 +620,7 @@ export function FriendsTab({
                         type="button"
                         disabled={sendingReq}
                         onClick={() => handleSendRequest()}
-                        className="px-4 py-1.5 rounded-lg bg-[#10e760] text-black text-[12px] font-semibold cursor-pointer"
+                        className="px-4 py-1.5 rounded-full bg-[#30d158] text-black text-[12px] font-semibold cursor-pointer"
                       >
                         Try Invite Link
                       </button>
@@ -650,17 +632,17 @@ export function FriendsTab({
                       key={m.userId}
                       type="button"
                       onClick={() => openMemberPreview(m)}
-                      className="w-full p-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.07] flex items-center justify-between gap-3 text-left cursor-pointer transition-colors"
+                      className="w-full px-4 py-3 hover:bg-white/[0.04] flex items-center justify-between gap-3 text-left cursor-pointer transition-colors"
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="w-9 h-9 rounded-full bg-white/[0.08] flex items-center justify-center text-[13px] font-semibold text-white shrink-0">
                           {m.name.slice(0, 1).toUpperCase()}
                         </div>
                         <div className="min-w-0">
-                          <div className="text-[13px] font-semibold text-white truncate">
+                          <div className="text-[14px] font-medium text-white truncate">
                             {m.name}
                           </div>
-                          <div className="text-[11px] text-[#86868b] truncate">
+                          <div className="text-[12px] text-[#86868b] truncate">
                             @{m.username}
                             {m.goal ? ` · ${m.goal}` : ""}
                           </div>
@@ -668,23 +650,21 @@ export function FriendsTab({
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
                         {m.friendshipStatus === "accepted" ? (
-                          <span className="px-2 py-0.5 rounded-full bg-[#10e760]/15 text-[#10e760] text-[10px] font-semibold">
+                          <span className="text-[#30d158] text-[12px] font-medium">
                             Friends
                           </span>
                         ) : m.friendshipStatus === "pending_sent" ? (
-                          <span className="px-2 py-0.5 rounded-full bg-white/[0.06] text-[#86868b] text-[10px] font-medium">
-                            Sent
-                          </span>
+                          <span className="text-[#86868b] text-[12px]">Sent</span>
                         ) : m.friendshipStatus === "pending_received" ? (
-                          <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 text-[10px] font-semibold">
+                          <span className="text-amber-400 text-[12px] font-medium">
                             Pending
                           </span>
                         ) : (
-                          <span className="text-[11px] font-medium text-[#10e760]">
+                          <span className="text-[12px] font-medium text-[#30d158]">
                             View
                           </span>
                         )}
-                        <ChevronRight className="w-4 h-4 text-[#525257]" />
+                        <ChevronRight className="w-4 h-4 text-[#636366]" />
                       </div>
                     </button>
                   ))
@@ -692,18 +672,16 @@ export function FriendsTab({
               </div>
             )}
 
-            <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] space-y-2.5">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
-                Your Invite Link
-              </div>
-              <div className="text-[12px] text-[#a1a1a6] break-all font-mono">
+            <div className="p-4 rounded-2xl bg-[#1c1c1e] space-y-3">
+              <div className="text-[12px] font-medium text-[#86868b]">Invite Link</div>
+              <div className="text-[12px] text-[#d1d1d6] break-all font-mono">
                 {inviteLink}
               </div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
                   onClick={() => openWhatsAppShare(inviteShareText)}
-                  className="h-10 rounded-xl bg-[#10e760] hover:bg-[#25d658] text-black text-[13px] font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="h-9 rounded-full bg-[#30d158] text-black text-[12px] font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <MessageCircle className="w-3.5 h-3.5" />
                   WhatsApp
@@ -711,20 +689,20 @@ export function FriendsTab({
                 <button
                   type="button"
                   onClick={handleNativeInviteShare}
-                  className="h-10 rounded-xl bg-white/[0.07] hover:bg-white/[0.12] text-white text-[13px] font-medium flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="h-9 rounded-full bg-white/[0.08] hover:bg-white/[0.14] text-white text-[12px] font-medium flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <Share2 className="w-3.5 h-3.5" />
                   Share
                 </button>
+                <button
+                  type="button"
+                  onClick={handleCopyInvite}
+                  className="h-9 rounded-full bg-white/[0.08] hover:bg-white/[0.14] text-white text-[12px] font-medium flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  Copy
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={handleCopyInvite}
-                className="w-full h-9 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-[#a1a1a6] hover:text-white text-[12px] font-medium flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <Copy className="w-3.5 h-3.5" />
-                Copy Link
-              </button>
             </div>
           </div>
         )}

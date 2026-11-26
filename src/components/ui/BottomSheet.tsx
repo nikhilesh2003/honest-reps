@@ -73,7 +73,7 @@ export function BottomSheet({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-md p-0 sm:p-4 animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-md p-0 sm:p-4 animate-in fade-in duration-150"
       onClick={onClose}
     >
       <div
@@ -85,34 +85,34 @@ export function BottomSheet({
             ? { transform: `translateY(${dragOffset}px)`, transition: "none" }
             : undefined
         }
-        className="w-full max-w-md bg-[#0c0c0e] border border-white/12 rounded-t-[26px] sm:rounded-[24px] max-h-[90vh] flex flex-col shadow-2xl overflow-hidden transition-transform duration-200"
+        className="w-full max-w-md bg-[#141416] border border-white/[0.08] rounded-t-[28px] sm:rounded-[26px] max-h-[90vh] flex flex-col shadow-[0_-8px_40px_rgba(0,0,0,0.55)] overflow-hidden transition-transform duration-200"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Drag Handle Header */}
+        {/* Native iOS Sheet Grabber + Calm Header */}
         <div
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
           className="pt-2.5 select-none"
         >
-          <div className="w-9 h-1 rounded-full bg-white/20 mx-auto mb-2 sm:hidden" />
-          <div className="flex items-start justify-between px-5 pt-1.5 pb-3 border-b border-white/[0.06]">
-            <div>
+          <div className="w-9 h-1 rounded-full bg-white/15 mx-auto mb-2 sm:hidden" />
+          <div className="flex items-start justify-between px-5 pt-1 pb-3">
+            <div className="min-w-0 pr-3">
               <h2
                 id={titleId}
-                className="text-[18px] font-semibold tracking-[-0.02em] text-[#f5f5f7]"
+                className="text-[18px] font-semibold tracking-[-0.02em] text-[#f5f5f7] leading-snug"
               >
                 {title}
               </h2>
               {subtitle && (
-                <p className="text-[12px] text-[#86868b] mt-0.5">{subtitle}</p>
+                <p className="text-[12px] text-[#86868b] mt-0.5 leading-snug">{subtitle}</p>
               )}
             </div>
             <button
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className="w-9 h-9 rounded-full bg-white/[0.06] hover:bg-white/[0.12] flex items-center justify-center text-[#86868b] hover:text-white transition-colors cursor-pointer shrink-0"
+              className="w-8 h-8 rounded-full bg-white/[0.07] hover:bg-white/[0.12] flex items-center justify-center text-[#86868b] hover:text-white transition-colors cursor-pointer shrink-0"
             >
               <X className="w-4 h-4" />
             </button>
@@ -121,7 +121,7 @@ export function BottomSheet({
 
         <div
           ref={scrollBodyRef}
-          className="px-5 pt-4 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] overflow-y-auto no-scrollbar"
+          className="px-5 pt-1 pb-[calc(1.35rem+env(safe-area-inset-bottom,0px))] overflow-y-auto no-scrollbar"
         >
           {children}
         </div>

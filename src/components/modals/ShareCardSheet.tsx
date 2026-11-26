@@ -37,124 +37,116 @@ function renderSummaryCanvas(state: AppStatePayload): string {
   canvas.height = H;
   const ctx = canvas.getContext("2d")!;
 
-  // Pure OLED Black Canvas
+  // Pure OLED Black Canvas (Zero neon glow — pure Apple Fitness minimalism)
   ctx.fillStyle = "#000000";
   ctx.fillRect(0, 0, W, H);
 
-  // Subtle emerald radial glow behind hero
-  const glow = ctx.createRadialGradient(W / 2, 340, 40, W / 2, 340, 480);
-  glow.addColorStop(0, "rgba(16, 231, 96, 0.16)");
-  glow.addColorStop(1, "rgba(0, 0, 0, 0)");
-  ctx.fillStyle = glow;
-  ctx.fillRect(0, 0, W, H);
-
-  // Outer Card Border
-  drawRoundedRect(ctx, 56, 56, W - 112, H - 112, 56);
-  ctx.fillStyle = "#0a0a0c";
+  // Outer Quiet Surface Card
+  drawRoundedRect(ctx, 56, 56, W - 112, H - 112, 64);
+  ctx.fillStyle = "#111113";
   ctx.fill();
   ctx.lineWidth = 2;
-  ctx.strokeStyle = "rgba(255,255,255,0.12)";
+  ctx.strokeStyle = "rgba(255,255,255,0.08)";
   ctx.stroke();
 
-  const fontStack = '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif';
+  const fontStack =
+    '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif';
 
   // Header
-  ctx.fillStyle = "#10e760";
-  ctx.font = `700 26px ${fontStack}`;
-  ctx.fillText("HONEST REPS", 120, 150);
+  ctx.fillStyle = "#86868b";
+  ctx.font = `600 26px ${fontStack}`;
+  ctx.fillText("Honest Reps", 124, 154);
 
   ctx.fillStyle = "#86868b";
   ctx.font = `500 26px ${fontStack}`;
   ctx.textAlign = "right";
-  ctx.fillText(`@${state.profile.username}`, W - 120, 150);
+  ctx.fillText(`@${state.profile.username}`, W - 124, 154);
   ctx.textAlign = "left";
 
   ctx.fillStyle = "#f5f5f7";
-  ctx.font = `700 54px ${fontStack}`;
-  ctx.fillText(state.profile.name, 120, 225);
+  ctx.font = `600 56px ${fontStack}`;
+  ctx.fillText(state.profile.name, 124, 228);
 
   // Hero Score Block
   const heroScore =
     state.todaySummary.effortScore ?? state.monthStats.monthEffort ?? null;
   const isTodayScored = state.todaySummary.effortScore !== null;
-  const heroLabel = isTodayScored ? "TODAY'S EFFORT" : `${state.monthStats.monthPrefix} MONTH AVG`;
+  const heroLabel = isTodayScored
+    ? "Today's Effort"
+    : `${state.monthStats.monthPrefix} Monthly Effort`;
 
-  drawRoundedRect(ctx, 120, 275, W - 240, 320, 40);
-  ctx.fillStyle = "#050507";
+  drawRoundedRect(ctx, 124, 280, W - 248, 316, 44);
+  ctx.fillStyle = "#1c1c1e";
   ctx.fill();
-  ctx.strokeStyle = "rgba(16, 231, 96, 0.35)";
-  ctx.stroke();
 
   ctx.fillStyle = "#86868b";
-  ctx.font = `600 24px ${fontStack}`;
-  ctx.fillText(heroLabel, 170, 340);
+  ctx.font = `500 26px ${fontStack}`;
+  ctx.fillText(heroLabel, 174, 344);
 
-  ctx.fillStyle = "#10e760";
-  ctx.font = `700 156px ${fontStack}`;
+  ctx.fillStyle = "#30d158";
+  ctx.font = `600 156px ${fontStack}`;
   const scoreStr = heroScore !== null ? String(heroScore) : "Cal";
-  ctx.fillText(scoreStr, 165, 495);
+  ctx.fillText(scoreStr, 168, 496);
 
   const scoreWidth = ctx.measureText(scoreStr).width;
   if (heroScore !== null) {
-    ctx.fillStyle = "#525257";
-    ctx.font = `600 44px ${fontStack}`;
-    ctx.fillText("/ 100", 185 + scoreWidth, 495);
+    ctx.fillStyle = "#636366";
+    ctx.font = `500 42px ${fontStack}`;
+    ctx.fillText("/ 100", 186 + scoreWidth, 496);
   }
 
-  ctx.fillStyle = "#a1a1a6";
-  ctx.font = `500 26px ${fontStack}`;
-  ctx.fillText("50 = Personal Usual · Relative to Own History", 170, 555);
+  ctx.fillStyle = "#86868b";
+  ctx.font = `500 25px ${fontStack}`;
+  ctx.fillText("50 is personal usual · Scored against own history", 174, 554);
 
   // 7-Day Rolling Bars
   ctx.fillStyle = "#86868b";
-  ctx.font = `600 24px ${fontStack}`;
-  ctx.fillText("LAST 7 DAYS", 120, 665);
+  ctx.font = `500 25px ${fontStack}`;
+  ctx.fillText("Last 7 Days", 124, 666);
 
   const days = state.rolling7Days;
-  const barAreaX = 120;
-  const barAreaW = W - 240;
+  const barAreaX = 124;
+  const barAreaW = W - 248;
   const gap = 22;
   const barW = (barAreaW - gap * 6) / 7;
-  const barTop = 700;
-  const barH = 230;
+  const barTop = 702;
+  const barH = 228;
 
   days.forEach((d, idx) => {
     const bx = barAreaX + idx * (barW + gap);
     const isLast = idx === days.length - 1;
 
-    drawRoundedRect(ctx, bx, barTop, barW, barH, 22);
-    ctx.fillStyle = "#050506";
+    drawRoundedRect(ctx, bx, barTop, barW, barH, 24);
+    ctx.fillStyle = "#1c1c1e";
     ctx.fill();
-    ctx.strokeStyle = isLast ? "rgba(16,231,96,0.65)" : "rgba(255,255,255,0.1)";
-    ctx.stroke();
 
     if (d.effortScore !== null) {
       const pct = Math.max(0.18, Math.min(1, d.effortScore / 100));
       const fh = Math.round((barH - 12) * pct);
-      drawRoundedRect(ctx, bx + 6, barTop + barH - 6 - fh, barW - 12, fh, 16);
+      drawRoundedRect(ctx, bx + 6, barTop + barH - 6 - fh, barW - 12, fh, 18);
       ctx.fillStyle =
         d.status === "Calibrating"
-          ? "#ea580c"
+          ? "#ff9f0a"
           : isLast || d.effortScore >= 75
-          ? "#10e760"
+          ? "#30d158"
           : d.effortScore >= 50
-          ? "#26a641"
-          : "#006d32";
+          ? "#228b46"
+          : "#175c31";
       ctx.fill();
 
-      ctx.fillStyle = d.effortScore >= 48 || isLast ? "#000000" : "#bbf7d0";
-      ctx.font = `700 24px ${fontStack}`;
+      ctx.fillStyle = d.effortScore >= 48 || isLast ? "#000000" : "#dcfce7";
+      ctx.font = `600 23px ${fontStack}`;
       ctx.textAlign = "center";
-      ctx.fillText(String(d.effortScore), bx + barW / 2, barTop + barH - fh + 26);
+      ctx.fillText(String(d.effortScore), bx + barW / 2, barTop + barH - fh + 28);
     } else if (d.isRest) {
-      ctx.fillStyle = "#525257";
-      ctx.font = `600 20px ${fontStack}`;
+      ctx.fillStyle = "#86868b";
+      ctx.font = `500 20px ${fontStack}`;
       ctx.textAlign = "center";
       ctx.fillText("Rest", bx + barW / 2, barTop + barH - 22);
     }
 
-    ctx.fillStyle = isLast ? "#10e760" : "#86868b";
-    ctx.font = `600 22px ${fontStack}`;
+    ctx.fillStyle = isLast ? "#30d158" : "#86868b";
+    ctx.font = `500 22px ${fontStack}`;
     ctx.textAlign = "center";
     ctx.fillText(isLast ? "Today" : d.dayLetter, bx + barW / 2, barTop + barH + 38);
     ctx.textAlign = "left";
@@ -162,33 +154,31 @@ function renderSummaryCanvas(state: AppStatePayload): string {
 
   // 3 Summary Stat Tiles
   const stats = [
-    { label: "STREAK", val: `${state.monthStats.currentStreak}d` },
-    { label: "MONTH ACTIVE", val: `${state.monthStats.activeDaysThisMonth}d` },
-    { label: "YEAR ACTIVE", val: `${state.monthStats.activeDaysYear}d` },
+    { label: "Streak", val: `${state.monthStats.currentStreak}d` },
+    { label: "Month Active", val: `${state.monthStats.activeDaysThisMonth}d` },
+    { label: "Year Active", val: `${state.monthStats.activeDaysYear}d` },
   ];
   const tileW = (barAreaW - 32) / 3;
   stats.forEach((st, idx) => {
-    const tx = 120 + idx * (tileW + 16);
+    const tx = 124 + idx * (tileW + 16);
     const ty = 1020;
-    drawRoundedRect(ctx, tx, ty, tileW, 145, 28);
-    ctx.fillStyle = "#111115";
+    drawRoundedRect(ctx, tx, ty, tileW, 144, 30);
+    ctx.fillStyle = "#1c1c1e";
     ctx.fill();
-    ctx.strokeStyle = "rgba(255,255,255,0.08)";
-    ctx.stroke();
 
-    ctx.fillStyle = "#10e760";
-    ctx.font = `700 48px ${fontStack}`;
+    ctx.fillStyle = idx === 2 ? "#f5f5f7" : "#30d158";
+    ctx.font = `600 48px ${fontStack}`;
     ctx.textAlign = "center";
-    ctx.fillText(st.val, tx + tileW / 2, ty + 78);
+    ctx.fillText(st.val, tx + tileW / 2, ty + 76);
 
     ctx.fillStyle = "#86868b";
-    ctx.font = `600 20px ${fontStack}`;
-    ctx.fillText(st.label, tx + tileW / 2, ty + 116);
+    ctx.font = `500 21px ${fontStack}`;
+    ctx.fillText(st.label, tx + tileW / 2, ty + 114);
     ctx.textAlign = "left";
   });
 
   // Footer
-  ctx.fillStyle = "#525257";
+  ctx.fillStyle = "#636366";
   ctx.font = `500 22px ${fontStack}`;
   ctx.textAlign = "center";
   ctx.fillText("honestreps.ifleon.com", W / 2, H - 92);
@@ -214,7 +204,7 @@ export function ShareCardSheet({ open, onClose, state, onToast }: ShareCardSheet
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    onToast("Saved OLED summary card");
+    onToast("Saved summary card");
   };
 
   const handleNativeShare = async () => {
@@ -252,12 +242,12 @@ export function ShareCardSheet({ open, onClose, state, onToast }: ShareCardSheet
     <BottomSheet
       open={open}
       onClose={onClose}
-      title="Share Summary Card"
-      subtitle="OLED card ready for Stories, WhatsApp, or iMessage"
+      title="Summary Card"
+      subtitle="Ready for Stories, WhatsApp, or iMessage"
     >
       <div className="space-y-4">
         {dataUrl && (
-          <div className="rounded-2xl overflow-hidden border border-white/12 bg-black p-2">
+          <div className="rounded-2xl overflow-hidden bg-[#1c1c1e] p-2.5">
             <img
               src={dataUrl}
               alt="Honest Reps Summary Card"
@@ -271,16 +261,16 @@ export function ShareCardSheet({ open, onClose, state, onToast }: ShareCardSheet
             type="button"
             disabled={sharing || !dataUrl}
             onClick={handleNativeShare}
-            className="h-11 rounded-2xl bg-[#10e760] hover:bg-[#25d658] text-black font-semibold text-[13px] flex items-center justify-center gap-2 cursor-pointer"
+            className="h-11 rounded-full bg-[#30d158] hover:opacity-90 text-black font-semibold text-[13px] flex items-center justify-center gap-2 cursor-pointer"
           >
             <Share2 className="w-4 h-4" />
-            {sharing ? "Sharing..." : "Share Image"}
+            {sharing ? "Sharing..." : "Share"}
           </button>
           <button
             type="button"
             disabled={!dataUrl}
             onClick={handleDownload}
-            className="h-11 rounded-2xl bg-white/[0.08] hover:bg-white/[0.14] border border-white/10 text-white font-semibold text-[13px] flex items-center justify-center gap-2 cursor-pointer"
+            className="h-11 rounded-full bg-[#1c1c1e] hover:bg-white/[0.12] text-white font-medium text-[13px] flex items-center justify-center gap-2 cursor-pointer"
           >
             <Download className="w-4 h-4" />
             Save PNG

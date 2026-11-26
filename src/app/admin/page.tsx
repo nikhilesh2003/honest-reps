@@ -120,7 +120,13 @@ interface AdminPayload {
     enabled?: boolean;
   }>;
   adminEmails: Array<{ email: string; addedBy: string; addedAt: string }>;
-  auditLog: Array<{ id: string; adminEmail: string; action: string; target: string; timestamp: string }>;
+  auditLog: Array<{
+    id: string;
+    adminEmail: string;
+    action: string;
+    target: string;
+    timestamp: string;
+  }>;
   systemHealth: {
     supabase: {
       configured: boolean;
@@ -240,7 +246,7 @@ export default function AdminPage() {
           </p>
           <Link
             href="/"
-            className="inline-flex items-center justify-center w-full h-11 rounded-2xl bg-white text-black font-semibold text-[14px]"
+            className="inline-flex items-center justify-center w-full h-11 rounded-full bg-white text-black font-semibold text-[14px]"
           >
             Back to App
           </Link>
@@ -252,28 +258,22 @@ export default function AdminPage() {
   if (!data) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center px-6">
-        <div className="bg-black px-5 py-3 rounded-2xl">
-          <img
-            src="/icons/logo-wordmark.png"
-            alt="honestreps.com"
-            className="h-11 w-auto object-contain animate-pulse"
-          />
-        </div>
+        <span className="text-[13px] text-[#86868b]">Loading Admin...</span>
       </div>
     );
   }
 
   const navItems: Array<{ id: AdminSection; label: string; icon: typeof LayoutDashboard }> = [
-    { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { id: "dashboard", label: "Overview", icon: LayoutDashboard },
     { id: "users", label: "Users", icon: Users },
-    { id: "library", label: "Exercise Library", icon: Dumbbell },
+    { id: "library", label: "Library", icon: Dumbbell },
     { id: "ai", label: "AI & Usage", icon: Cpu },
-    { id: "scoring", label: "Effort & Grid", icon: Sliders },
+    { id: "scoring", label: "Scoring", icon: Sliders },
     { id: "moderation", label: "Moderation", icon: Flag },
     { id: "announcements", label: "Notifications", icon: Megaphone },
-    { id: "admins", label: "Admin Emails", icon: ShieldCheck },
+    { id: "admins", label: "Admins", icon: ShieldCheck },
     { id: "audit", label: "Audit Log", icon: FileText },
-    { id: "health", label: "Export & Health", icon: Activity },
+    { id: "health", label: "Health & Export", icon: Activity },
   ];
 
   const simScore = computeEffortScoreFromRatio(Number(simRatio) || 1, 1, {
@@ -293,23 +293,24 @@ export default function AdminPage() {
       <Toast toast={toast} />
 
       {/* Top Admin Bar */}
-      <header className="sticky top-0 z-30 bg-black/90 backdrop-blur-xl border-b border-white/[0.08]">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <span className="brand-icon-box w-8 h-8 rounded-[10px] p-1 flex items-center justify-center shrink-0">
-              <img src="/icons/logo-icon.png" alt="Honest Reps" className="w-full h-full object-contain" />
+      <header className="sticky top-0 z-30 bg-black/80 backdrop-blur-2xl border-b border-white/[0.05] pt-safe">
+        <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2.5">
+            <span className="brand-icon-box w-8 h-8 rounded-[9px] p-1 flex items-center justify-center shrink-0">
+              <img
+                src="/icons/logo-icon.png"
+                alt="Honest Reps"
+                className="w-full h-full object-contain"
+              />
             </span>
-            <div>
-              <div className="text-[15px] font-semibold text-white leading-none">
-                Admin Console
-              </div>
-              <div className="text-[11px] text-[#86868b] mt-0.5">Honest Reps</div>
-            </div>
+            <span className="text-[16px] font-semibold tracking-[-0.02em] text-white">
+              Admin
+            </span>
           </div>
 
           <Link
             href="/"
-            className="px-3.5 py-2 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] text-[12px] font-medium text-white flex items-center gap-1.5"
+            className="px-3.5 py-1.5 rounded-full bg-[#1c1c1e] hover:bg-white/[0.12] text-[12px] font-medium text-white flex items-center gap-1.5 transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             Member App
@@ -317,9 +318,9 @@ export default function AdminPage() {
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-6">
-        {/* Responsive Nav (horizontal scroll on mobile, sidebar on desktop) */}
-        <aside className="flex lg:flex-col gap-1.5 overflow-x-auto no-scrollbar pb-1 lg:pb-0">
+      <div className="max-w-5xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-[200px_1fr] gap-6">
+        {/* macOS Settings-style Sidebar / Mobile Pill Rail */}
+        <aside className="flex lg:flex-col gap-1 overflow-x-auto no-scrollbar pb-1 lg:pb-0">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = section === item.id;
@@ -328,13 +329,17 @@ export default function AdminPage() {
                 key={item.id}
                 type="button"
                 onClick={() => setSection(item.id)}
-                className={`shrink-0 flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-[13px] font-medium transition-colors cursor-pointer ${
+                className={`shrink-0 flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] font-medium transition-colors cursor-pointer ${
                   active
-                    ? "bg-[#10e760]/15 text-[#10e760] border border-[#10e760]/30"
-                    : "text-[#86868b] hover:text-white hover:bg-white/[0.04] border border-transparent"
+                    ? "bg-[#1c1c1e] text-white font-semibold"
+                    : "text-[#86868b] hover:text-white hover:bg-white/[0.04]"
                 }`}
               >
-                <Icon className="w-4 h-4 shrink-0" />
+                <Icon
+                  className={`w-4 h-4 shrink-0 ${
+                    active ? "text-[#30d158]" : "text-[#86868b]"
+                  }`}
+                />
                 <span>{item.label}</span>
               </button>
             );
@@ -342,11 +347,13 @@ export default function AdminPage() {
         </aside>
 
         {/* Active Panel */}
-        <section className="space-y-4 min-w-0">
-          {/* 1. DASHBOARD (FR-47) */}
+        <section className="space-y-5 min-w-0">
+          {/* 1. DASHBOARD */}
           {section === "dashboard" && (
             <div className="space-y-4">
-              <h1 className="text-[24px] font-bold tracking-[-0.02em] text-white">Overview</h1>
+              <h1 className="text-[26px] font-semibold tracking-[-0.03em] text-white">
+                Overview
+              </h1>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
                   ["Total Users", data.dashboard.totalUsers],
@@ -359,10 +366,10 @@ export default function AdminPage() {
                   ["AI Cost Today", `$${data.dashboard.aiCostTodayUsd.toFixed(4)}`],
                 ].map(([label, val]) => (
                   <div key={String(label)} className="apple-card p-4">
-                    <div className="text-[11px] uppercase tracking-[0.06em] text-[#86868b] font-semibold">
+                    <div className="text-[12px] text-[#86868b] font-medium">
                       {label}
                     </div>
-                    <div className="text-[26px] font-bold text-white tabular-nums mt-1">
+                    <div className="text-[26px] font-semibold text-white tabular-nums mt-1">
                       {val}
                     </div>
                   </div>
@@ -371,36 +378,40 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* 2. USERS (FR-48: NO private chat or raw weight shown) */}
+          {/* 2. USERS */}
           {section === "users" && (
             <div className="space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <h1 className="text-[24px] font-bold tracking-[-0.02em] text-white">Users</h1>
+                <h1 className="text-[26px] font-semibold tracking-[-0.03em] text-white">
+                  Users
+                </h1>
                 <input
                   type="text"
                   value={userSearch}
                   onChange={(e) => setUserSearch(e.target.value)}
                   placeholder="Search users..."
-                  className="h-10 px-3.5 rounded-xl bg-[#0a0a0c] border border-white/12 text-[13px] text-white focus:outline-none focus:border-[#10e760]"
+                  className="apple-input h-10 px-3.5 text-[13px] w-full sm:w-64"
                 />
               </div>
-              <div className="apple-card divide-y divide-white/[0.06]">
+              <div className="apple-card divide-y divide-white/[0.06] overflow-hidden">
                 {filteredUsers.map((u) => (
                   <div
                     key={u.userId}
-                    className="p-4 flex flex-wrap items-center justify-between gap-3"
+                    className="px-4 py-3.5 flex flex-wrap items-center justify-between gap-3"
                   >
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[14px] font-semibold text-white">{u.name}</span>
+                        <span className="text-[14px] font-semibold text-white">
+                          {u.name}
+                        </span>
                         <span className="text-[12px] text-[#86868b]">@{u.username}</span>
                         {u.isAdmin && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#10e760]/15 text-[#10e760]">
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#30d158]/15 text-[#30d158] font-medium">
                             Admin
                           </span>
                         )}
                         {u.suspended && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-400">
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 font-medium">
                             Suspended
                           </span>
                         )}
@@ -415,10 +426,12 @@ export default function AdminPage() {
                         onClick={() =>
                           runAction(
                             { action: "toggle-suspend-user", userId: u.userId },
-                            u.suspended ? `Reactivated @${u.username}` : `Suspended @${u.username}`
+                            u.suspended
+                              ? `Reactivated @${u.username}`
+                              : `Suspended @${u.username}`
                           )
                         }
-                        className="px-3 h-8 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] text-[12px] text-white cursor-pointer"
+                        className="px-3 h-8 rounded-full bg-[#1c1c1e] hover:bg-white/[0.12] text-[12px] font-medium text-white cursor-pointer"
                       >
                         {u.suspended ? "Reactivate" : "Suspend"}
                       </button>
@@ -430,7 +443,7 @@ export default function AdminPage() {
                             `Deleted @${u.username}`
                           )
                         }
-                        className="w-8 h-8 rounded-lg bg-white/[0.04] hover:bg-red-500/20 text-[#86868b] hover:text-red-400 flex items-center justify-center cursor-pointer"
+                        className="w-8 h-8 rounded-full bg-[#1c1c1e] hover:bg-red-500/20 text-[#86868b] hover:text-red-400 flex items-center justify-center cursor-pointer"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -441,29 +454,27 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* 3. DEFAULT EXERCISE LIBRARY & SHARED MUSCLE GROUPS (FR-49) */}
+          {/* 3. DEFAULT EXERCISE LIBRARY */}
           {section === "library" && (
             <div className="space-y-4">
-              <h1 className="text-[24px] font-bold tracking-[-0.02em] text-white">
-                Site-Wide Defaults
+              <h1 className="text-[26px] font-semibold tracking-[-0.03em] text-white">
+                Default Library
               </h1>
 
               <div className="apple-card p-4 space-y-3">
-                <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
-                  Add Default Exercise
-                </div>
+                <div className="apple-section-label">Add Exercise</div>
                 <div className="flex flex-wrap gap-2">
                   <input
                     type="text"
                     value={newExName}
                     onChange={(e) => setNewExName(e.target.value)}
                     placeholder="Exercise name"
-                    className="flex-1 min-w-[160px] h-10 px-3 rounded-xl bg-black border border-white/12 text-[13px] text-white"
+                    className="apple-input flex-1 min-w-[160px] h-10 px-3.5 text-[13px]"
                   />
                   <select
                     value={newExGroup}
                     onChange={(e) => setNewExGroup(e.target.value)}
-                    className="h-10 px-3 rounded-xl bg-black border border-white/12 text-[13px] text-white"
+                    className="apple-input h-10 px-3 text-[13px]"
                   >
                     {data.defaultMuscleGroups.map((mg) => (
                       <option key={mg.id} value={mg.name}>
@@ -476,25 +487,29 @@ export default function AdminPage() {
                     onClick={() => {
                       if (!newExName.trim()) return;
                       runAction(
-                        { action: "add-default-exercise", name: newExName, muscleGroup: newExGroup },
+                        {
+                          action: "add-default-exercise",
+                          name: newExName,
+                          muscleGroup: newExGroup,
+                        },
                         `Added ${newExName}`
                       );
                       setNewExName("");
                     }}
-                    className="px-4 h-10 rounded-xl bg-[#10e760] text-black text-[13px] font-semibold flex items-center gap-1 cursor-pointer"
+                    className="px-4 h-10 rounded-full bg-[#30d158] text-black text-[13px] font-semibold flex items-center gap-1 cursor-pointer"
                   >
                     <Plus className="w-4 h-4" />
                     Add
                   </button>
                 </div>
 
-                <div className="flex gap-2 pt-2 border-t border-white/[0.06]">
+                <div className="flex gap-2 pt-3 border-t border-white/[0.06]">
                   <input
                     type="text"
                     value={newMgName}
                     onChange={(e) => setNewMgName(e.target.value)}
                     placeholder="Add shared muscle group"
-                    className="flex-1 h-10 px-3 rounded-xl bg-black border border-white/12 text-[13px] text-white"
+                    className="apple-input flex-1 h-10 px-3.5 text-[13px]"
                   />
                   <button
                     type="button"
@@ -506,7 +521,7 @@ export default function AdminPage() {
                       );
                       setNewMgName("");
                     }}
-                    className="px-4 h-10 rounded-xl bg-white/10 text-white text-[13px] font-medium cursor-pointer"
+                    className="px-4 h-10 rounded-full bg-[#1c1c1e] hover:bg-white/[0.12] text-white text-[13px] font-medium cursor-pointer"
                   >
                     Add Group
                   </button>
@@ -518,7 +533,9 @@ export default function AdminPage() {
                   <div key={ex.id} className="px-4 py-3 flex items-center justify-between">
                     <div className={ex.enabled ? "" : "opacity-40 line-through"}>
                       <span className="text-[14px] font-medium text-white">{ex.name}</span>
-                      <span className="text-[12px] text-[#86868b] ml-2">{ex.muscleGroup}</span>
+                      <span className="text-[12px] text-[#86868b] ml-2">
+                        {ex.muscleGroup}
+                      </span>
                     </div>
                     <button
                       type="button"
@@ -528,7 +545,7 @@ export default function AdminPage() {
                           ex.enabled ? `Disabled ${ex.name}` : `Enabled ${ex.name}`
                         )
                       }
-                      className="px-3 h-8 rounded-lg bg-white/[0.06] text-[12px] text-white cursor-pointer"
+                      className="px-3 h-8 rounded-full bg-[#1c1c1e] hover:bg-white/[0.12] text-[12px] font-medium text-white cursor-pointer"
                     >
                       {ex.enabled ? "Disable" : "Enable"}
                     </button>
@@ -538,61 +555,65 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* 4. AI SETTINGS & USAGE (FR-50, FR-51: API keys NEVER shown) */}
+          {/* 4. AI SETTINGS & USAGE */}
           {section === "ai" && (
             <div className="space-y-4">
-              <h1 className="text-[24px] font-bold tracking-[-0.02em] text-white">AI Settings</h1>
+              <h1 className="text-[26px] font-semibold tracking-[-0.03em] text-white">
+                AI Settings
+              </h1>
               <div className="apple-card p-5 space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[11px] text-[#86868b] mb-1">Provider</label>
+                    <label className="block text-[12px] text-[#86868b] mb-1">Provider</label>
                     <select
                       value={aiProvider}
-                      onChange={(e) => setAiProvider(e.target.value as "gemini" | "openrouter")}
-                      className="w-full h-10 px-3 rounded-xl bg-black border border-white/12 text-[13px] text-white"
+                      onChange={(e) =>
+                        setAiProvider(e.target.value as "gemini" | "openrouter")
+                      }
+                      className="apple-input w-full h-10 px-3 text-[13px]"
                     >
                       <option value="gemini">Gemini (Primary)</option>
                       <option value="openrouter">OpenRouter</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[11px] text-[#86868b] mb-1">Model Name</label>
+                    <label className="block text-[12px] text-[#86868b] mb-1">Model</label>
                     <input
                       type="text"
                       value={aiModel}
                       onChange={(e) => setAiModel(e.target.value)}
-                      className="w-full h-10 px-3 rounded-xl bg-black border border-white/12 text-[13px] text-white"
+                      className="apple-input w-full h-10 px-3.5 text-[13px]"
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] text-[#86868b] mb-1">
-                      Daily Rate Limit / User
+                    <label className="block text-[12px] text-[#86868b] mb-1">
+                      Daily Limit / User
                     </label>
                     <input
                       type="number"
                       value={aiRateLimit}
                       onChange={(e) => setAiRateLimit(e.target.value)}
-                      className="w-full h-10 px-3 rounded-xl bg-black border border-white/12 text-[13px] text-white tabular-nums"
+                      className="apple-input w-full h-10 px-3.5 text-[13px] tabular-nums"
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] text-[#86868b] mb-1">
-                      Max Image Size (MB)
+                    <label className="block text-[12px] text-[#86868b] mb-1">
+                      Max Image (MB)
                     </label>
                     <input
                       type="number"
                       step="0.5"
                       value={aiMaxMb}
                       onChange={(e) => setAiMaxMb(e.target.value)}
-                      className="w-full h-10 px-3 rounded-xl bg-black border border-white/12 text-[13px] text-white tabular-nums"
+                      className="apple-input w-full h-10 px-3.5 text-[13px] tabular-nums"
                     />
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between text-[12px] text-[#86868b] pt-2 border-t border-white/[0.06]">
+                <div className="flex items-center justify-between text-[12px] text-[#86868b] pt-3 border-t border-white/[0.06]">
                   <span>
-                    Server Keys: Gemini ({data.aiConfig.geminiKeyConfigured ? "Set" : "Env unset"}) · OpenRouter (
-                    {data.aiConfig.openRouterKeyConfigured ? "Set" : "Env unset"})
+                    Keys: Gemini ({data.aiConfig.geminiKeyConfigured ? "Set" : "Unset"}) ·
+                    OpenRouter ({data.aiConfig.openRouterKeyConfigured ? "Set" : "Unset"})
                   </span>
                   <button
                     type="button"
@@ -608,7 +629,7 @@ export default function AdminPage() {
                         "AI settings saved"
                       )
                     }
-                    className="px-4 h-9 rounded-xl bg-[#10e760] text-black font-semibold text-[13px] cursor-pointer"
+                    className="px-4 h-9 rounded-full bg-[#30d158] text-black font-semibold text-[13px] cursor-pointer"
                   >
                     Save
                   </button>
@@ -616,14 +637,21 @@ export default function AdminPage() {
               </div>
 
               <div className="apple-card p-4 space-y-2.5">
-                <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
-                  Recent AI Calls & Parsing Failures
-                </div>
-                <div className="divide-y divide-white/[0.05]">
+                <div className="apple-section-label">Recent AI Calls</div>
+                <div className="divide-y divide-white/[0.06]">
                   {data.recentAiLogs.map((log) => (
-                    <div key={log.id} className="py-2.5 flex items-center justify-between gap-3 text-[12px]">
+                    <div
+                      key={log.id}
+                      className="py-2.5 flex items-center justify-between gap-3 text-[12px]"
+                    >
                       <div>
-                        <span className={log.success ? "text-white font-medium" : "text-amber-400 font-medium"}>
+                        <span
+                          className={
+                            log.success
+                              ? "text-white font-medium"
+                              : "text-amber-400 font-medium"
+                          }
+                        >
                           {log.provider}/{log.model} ({log.inputType})
                         </span>
                         {log.errorMessage && (
@@ -640,113 +668,117 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* 5. EFFORT SCORING & YEAR GRID THRESHOLDS (FR-54) */}
+          {/* 5. EFFORT SCORING */}
           {section === "scoring" && (
             <div className="space-y-4">
-              <h1 className="text-[24px] font-bold tracking-[-0.02em] text-white">
-                Effort Scoring & Year Grid
+              <h1 className="text-[26px] font-semibold tracking-[-0.03em] text-white">
+                Effort Scoring
               </h1>
 
-              {/* Mandatory FR-54 Warning */}
-              <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-2.5 text-[12px] text-amber-300">
+              <div className="p-3.5 rounded-2xl bg-amber-500/10 flex items-start gap-2.5 text-[12px] text-amber-300">
                 <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                 <span>
-                  Changes apply to future logs only. Past effort history is never rewritten, and every update is recorded in the audit log (v{data.scoringSettings.version}).
+                  Changes apply to future logs only. Past effort history is never rewritten
+                  (v{data.scoringSettings.version}).
                 </span>
               </div>
 
               <div className="apple-card p-5 space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-[11px] text-[#86868b] mb-1">
-                      Above-Usual Slope (default 12.5)
+                    <label className="block text-[12px] text-[#86868b] mb-1">
+                      Above-Usual Slope (12.5)
                     </label>
                     <input
                       type="number"
                       step="0.5"
                       value={slope}
                       onChange={(e) => setSlope(e.target.value)}
-                      className="w-full h-10 px-3 rounded-xl bg-black border border-white/12 text-white tabular-nums text-[13px]"
+                      className="apple-input w-full h-10 px-3.5 tabular-nums text-[13px]"
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] text-[#86868b] mb-1">
-                      Below-Usual Root (default 4)
+                    <label className="block text-[12px] text-[#86868b] mb-1">
+                      Below-Usual Root (4)
                     </label>
                     <input
                       type="number"
                       step="0.5"
                       value={root}
                       onChange={(e) => setRoot(e.target.value)}
-                      className="w-full h-10 px-3 rounded-xl bg-black border border-white/12 text-white tabular-nums text-[13px]"
+                      className="apple-input w-full h-10 px-3.5 tabular-nums text-[13px]"
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] text-[#86868b] mb-1">
+                    <label className="block text-[12px] text-[#86868b] mb-1">
                       Backfill Window (days)
                     </label>
                     <input
                       type="number"
                       value={backfillDays}
                       onChange={(e) => setBackfillDays(e.target.value)}
-                      className="w-full h-10 px-3 rounded-xl bg-black border border-white/12 text-white tabular-nums text-[13px]"
+                      className="apple-input w-full h-10 px-3.5 tabular-nums text-[13px]"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-white/[0.06]">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-white/[0.06]">
                   <div>
-                    <label className="block text-[11px] text-[#86868b] mb-1">Very Low Max</label>
+                    <label className="block text-[12px] text-[#86868b] mb-1">
+                      Very Low Max
+                    </label>
                     <input
                       type="number"
                       value={tVeryLow}
                       onChange={(e) => setTVeryLow(e.target.value)}
-                      className="w-full h-10 px-3 rounded-xl bg-black border border-white/12 text-white tabular-nums text-[13px]"
+                      className="apple-input w-full h-10 px-3.5 tabular-nums text-[13px]"
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] text-[#86868b] mb-1">Low Max</label>
+                    <label className="block text-[12px] text-[#86868b] mb-1">Low Max</label>
                     <input
                       type="number"
                       value={tLow}
                       onChange={(e) => setTLow(e.target.value)}
-                      className="w-full h-10 px-3 rounded-xl bg-black border border-white/12 text-white tabular-nums text-[13px]"
+                      className="apple-input w-full h-10 px-3.5 tabular-nums text-[13px]"
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] text-[#86868b] mb-1">Steady Max</label>
+                    <label className="block text-[12px] text-[#86868b] mb-1">
+                      Steady Max
+                    </label>
                     <input
                       type="number"
                       value={tSteady}
                       onChange={(e) => setTSteady(e.target.value)}
-                      className="w-full h-10 px-3 rounded-xl bg-black border border-white/12 text-white tabular-nums text-[13px]"
+                      className="apple-input w-full h-10 px-3.5 tabular-nums text-[13px]"
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] text-[#86868b] mb-1">High Max</label>
+                    <label className="block text-[12px] text-[#86868b] mb-1">High Max</label>
                     <input
                       type="number"
                       value={tHigh}
                       onChange={(e) => setTHigh(e.target.value)}
-                      className="w-full h-10 px-3 rounded-xl bg-black border border-white/12 text-white tabular-nums text-[13px]"
+                      className="apple-input w-full h-10 px-3.5 tabular-nums text-[13px]"
                     />
                   </div>
                 </div>
 
-                {/* Live Formula Preview */}
-                <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.07] flex flex-wrap items-center justify-between gap-3">
+                <div className="p-3.5 rounded-2xl bg-[#1c1c1e] flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <span className="text-[12px] text-[#86868b]">Ratio (today / usual):</span>
+                    <span className="text-[12px] text-[#86868b]">Ratio (today / usual)</span>
                     <input
                       type="number"
                       step="0.25"
                       value={simRatio}
                       onChange={(e) => setSimRatio(e.target.value)}
-                      className="w-20 h-9 px-2.5 rounded-lg bg-black border border-white/12 text-white tabular-nums text-[13px]"
+                      className="w-20 h-9 px-2.5 rounded-lg bg-black/40 text-white tabular-nums text-[13px] focus:outline-none"
                     />
                   </div>
                   <div className="text-[14px] text-white tabular-nums">
-                    Score: <strong className="text-[#10e760] text-[18px]">{simScore}</strong> / 100
+                    Score: <strong className="text-[#30d158] text-[18px]">{simScore}</strong>{" "}
+                    / 100
                   </div>
                 </div>
 
@@ -769,7 +801,7 @@ export default function AdminPage() {
                       "Saved scoring settings for future logs"
                     )
                   }
-                  className="px-5 h-10 rounded-xl bg-[#10e760] text-black font-semibold text-[13px] cursor-pointer"
+                  className="px-5 h-10 rounded-full bg-[#30d158] text-black font-semibold text-[13px] cursor-pointer"
                 >
                   Save for Future Logs
                 </button>
@@ -777,15 +809,18 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* 6. FRIEND MODERATION (FR-52) */}
+          {/* 6. FRIEND MODERATION */}
           {section === "moderation" && (
             <div className="space-y-4">
-              <h1 className="text-[24px] font-bold tracking-[-0.02em] text-white">
-                Friend Moderation
+              <h1 className="text-[26px] font-semibold tracking-[-0.03em] text-white">
+                Moderation
               </h1>
-              <div className="apple-card divide-y divide-white/[0.06]">
+              <div className="apple-card divide-y divide-white/[0.06] overflow-hidden">
                 {data.friendReports.map((rep) => (
-                  <div key={rep.id} className="p-4 flex flex-wrap items-center justify-between gap-3">
+                  <div
+                    key={rep.id}
+                    className="p-4 flex flex-wrap items-center justify-between gap-3"
+                  >
                     <div>
                       <div className="text-[14px] font-medium text-white">
                         @{rep.reportedUsername} reported by @{rep.reporterUsername}
@@ -793,18 +828,24 @@ export default function AdminPage() {
                       <div className="text-[12px] text-[#86868b] mt-0.5">{rep.reason}</div>
                     </div>
                     {rep.status === "resolved" ? (
-                      <span className="text-[12px] text-[#10e760]">Resolved</span>
+                      <span className="text-[12px] text-[#30d158] font-medium">
+                        Resolved
+                      </span>
                     ) : (
                       <div className="flex gap-2">
                         <button
                           type="button"
                           onClick={() =>
                             runAction(
-                              { action: "resolve-report", reportId: rep.id, removeFriendLinks: true },
+                              {
+                                action: "resolve-report",
+                                reportId: rep.id,
+                                removeFriendLinks: true,
+                              },
                               `Removed friend links for @${rep.reportedUsername}`
                             )
                           }
-                          className="px-3 h-8 rounded-lg bg-red-500/20 text-red-300 text-[12px] font-medium cursor-pointer"
+                          className="px-3.5 h-8 rounded-full bg-red-500/20 text-red-300 text-[12px] font-medium cursor-pointer"
                         >
                           Remove Links
                         </button>
@@ -812,11 +853,15 @@ export default function AdminPage() {
                           type="button"
                           onClick={() =>
                             runAction(
-                              { action: "resolve-report", reportId: rep.id, removeFriendLinks: false },
+                              {
+                                action: "resolve-report",
+                                reportId: rep.id,
+                                removeFriendLinks: false,
+                              },
                               "Report dismissed"
                             )
                           }
-                          className="px-3 h-8 rounded-lg bg-white/[0.07] text-white text-[12px] cursor-pointer"
+                          className="px-3.5 h-8 rounded-full bg-[#1c1c1e] text-white text-[12px] cursor-pointer"
                         >
                           Dismiss
                         </button>
@@ -828,84 +873,76 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* 7. NOTIFICATIONS & BROADCASTS (FR-53) */}
+          {/* 7. NOTIFICATIONS & BROADCASTS */}
           {section === "announcements" && (
             <div className="space-y-4">
               <div>
-                <h1 className="text-[24px] font-bold tracking-[-0.02em] text-white">
-                  Notifications & Broadcasts
+                <h1 className="text-[26px] font-semibold tracking-[-0.03em] text-white">
+                  Notifications
                 </h1>
-                <p className="text-[12px] text-[#86868b] mt-0.5">
-                  Send custom or preset notifications to specific member groups and maintain automated alerts.
+                <p className="text-[13px] text-[#86868b] mt-0.5">
+                  Send targeted broadcasts and configure automated alert templates.
                 </p>
               </div>
 
-              {/* Send Custom / Targeted Notification */}
               <div className="apple-card p-4 space-y-3.5">
-                <div className="text-[12px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
-                  Send Custom Notification
+                <div className="apple-section-label">Send Broadcast</div>
+
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    {
+                      label: "Calibration Nudge",
+                      target: "calibrating",
+                      title: "Unlock your personal 50 = usual baseline",
+                      body: "Your Day-1 Estimated Effort is live. Log 2 more sessions to calibrate against your own history.",
+                    },
+                    {
+                      label: "3-Day Streak Grace",
+                      target: "inactive_2d",
+                      title: "Your streak is still protected for 3 days",
+                      body: "Log a quick session or mark Rest today to keep your active streak going without breaking.",
+                    },
+                    {
+                      label: "Leaderboard Update",
+                      target: "active_streak",
+                      title: "This month's Effort Leaderboard is live",
+                      body: "Open Friends to check your current Effort rank and active days against your crew.",
+                    },
+                    {
+                      label: "Friend Activity",
+                      target: "all",
+                      title: "Compare honest effort with friends",
+                      body: "Invite a gym partner by @username to compare daily effort scores and streaks fairly.",
+                    },
+                  ].map((p) => (
+                    <button
+                      key={p.label}
+                      type="button"
+                      onClick={() => {
+                        setAnnTarget(p.target);
+                        setAnnTitle(p.title);
+                        setAnnBody(p.body);
+                      }}
+                      className="px-3 py-1 rounded-full bg-[#1c1c1e] hover:bg-white/[0.1] text-[12px] font-medium text-[#d1d1d6] cursor-pointer"
+                    >
+                      {p.label}
+                    </button>
+                  ))}
                 </div>
 
-                {/* Quick Presets */}
-                <div className="space-y-1.5">
-                  <div className="text-[11px] text-[#86868b]">Quick Presets</div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {[
-                      {
-                        label: "Calibration Nudge",
-                        target: "calibrating",
-                        title: "Unlock your personal 50 = usual baseline",
-                        body: "Your Day-1 Estimated Effort is live. Log 2 more sessions to calibrate against your own history.",
-                      },
-                      {
-                        label: "3-Day Streak Grace",
-                        target: "inactive_2d",
-                        title: "Your streak is still protected for 3 days",
-                        body: "Log a quick session or mark Rest today to keep your active streak going without breaking.",
-                      },
-                      {
-                        label: "Leaderboard Update",
-                        target: "active_streak",
-                        title: "This month's Effort Leaderboard is live",
-                        body: "Open Friends to check your current Effort rank and active days against your crew.",
-                      },
-                      {
-                        label: "Friend Activity",
-                        target: "all",
-                        title: "Compare honest effort with friends",
-                        body: "Invite a gym partner by @username to compare daily effort scores and streaks fairly.",
-                      },
-                    ].map((p) => (
-                      <button
-                        key={p.label}
-                        type="button"
-                        onClick={() => {
-                          setAnnTarget(p.target);
-                          setAnnTitle(p.title);
-                          setAnnBody(p.body);
-                        }}
-                        className="px-2.5 py-1 rounded-full bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] text-[11px] font-medium text-[#d1d1d6] cursor-pointer"
-                      >
-                        {p.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Target Audience Selector */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   <div>
-                    <label className="block text-[11px] text-[#86868b] mb-1">
-                      Target Users
+                    <label className="block text-[12px] text-[#86868b] mb-1">
+                      Audience
                     </label>
                     <select
                       value={annTarget}
                       onChange={(e) => setAnnTarget(e.target.value)}
-                      className="w-full h-10 px-3 rounded-xl bg-black border border-white/12 text-[13px] text-white"
+                      className="apple-input w-full h-10 px-3 text-[13px]"
                     >
                       <option value="all">All Members ({data.users.length})</option>
-                      <option value="calibrating">Calibrating Members (Est. Effort stage)</option>
-                      <option value="inactive_2d">Unlogged Today / 2–3d Streak Grace</option>
+                      <option value="calibrating">Calibrating Members</option>
+                      <option value="inactive_2d">Unlogged Today / Grace Window</option>
                       <option value="active_streak">Active Streak Members</option>
                       <option value="specific">Specific Member (@username)</option>
                     </select>
@@ -913,7 +950,7 @@ export default function AdminPage() {
 
                   {annTarget === "specific" && (
                     <div>
-                      <label className="block text-[11px] text-[#86868b] mb-1">
+                      <label className="block text-[12px] text-[#86868b] mb-1">
                         Member @username
                       </label>
                       <input
@@ -921,7 +958,7 @@ export default function AdminPage() {
                         value={annCustomUser}
                         onChange={(e) => setAnnCustomUser(e.target.value)}
                         placeholder="@hari"
-                        className="w-full h-10 px-3 rounded-xl bg-black border border-white/12 text-[13px] text-white"
+                        className="apple-input w-full h-10 px-3.5 text-[13px]"
                       />
                     </div>
                   )}
@@ -932,14 +969,14 @@ export default function AdminPage() {
                   value={annTitle}
                   onChange={(e) => setAnnTitle(e.target.value)}
                   placeholder="Notification title"
-                  className="w-full h-10 px-3 rounded-xl bg-black border border-white/12 text-[13px] text-white"
+                  className="apple-input w-full h-10 px-3.5 text-[13px]"
                 />
                 <textarea
                   rows={2}
                   value={annBody}
                   onChange={(e) => setAnnBody(e.target.value)}
                   placeholder="Notification message"
-                  className="w-full p-3 rounded-xl bg-black border border-white/12 text-[13px] text-white resize-none"
+                  className="apple-input w-full p-3.5 text-[13px] resize-none"
                 />
                 <button
                   type="button"
@@ -951,7 +988,6 @@ export default function AdminPage() {
                         : annTarget;
                     const t = annTitle.trim();
                     const b = annBody.trim();
-                    // Request permission synchronously on user click gesture before awaiting network action
                     const perm = await requestAppNotificationPermission();
                     const out = await apiAdminAction({
                       action: "send-announcement",
@@ -978,17 +1014,16 @@ export default function AdminPage() {
                       );
                     }
                   }}
-                  className="px-4 h-10 rounded-xl bg-[#10e760] text-black font-semibold text-[13px] cursor-pointer"
+                  className="px-5 h-10 rounded-full bg-[#30d158] text-black font-semibold text-[13px] cursor-pointer"
                 >
                   Send Notification
                 </button>
               </div>
 
-              {/* Sent Notifications History */}
               {data.announcements.length > 0 && (
-                <div className="apple-card divide-y divide-white/[0.06]">
-                  <div className="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
-                    Sent Notifications ({data.announcements.length})
+                <div className="apple-card divide-y divide-white/[0.06] overflow-hidden">
+                  <div className="px-4 py-3 apple-section-label">
+                    Sent ({data.announcements.length})
                   </div>
                   {data.announcements.map((a) => (
                     <div
@@ -1000,13 +1035,13 @@ export default function AdminPage() {
                           <span className="text-[14px] font-semibold text-white">
                             {a.title}
                           </span>
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#10e760]/15 text-[#10e760] border border-[#10e760]/30">
-                            Target: {a.target || "all"}
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#30d158]/15 text-[#30d158]">
+                            {a.target || "all"}
                           </span>
                         </div>
                         <div className="text-[12px] text-[#86868b] mt-1">{a.body}</div>
-                        <div className="text-[11px] text-[#525257] mt-1 tabular-nums">
-                          Sent by {a.sentBy} · {a.sentAt.slice(0, 16).replace("T", " ")}
+                        <div className="text-[11px] text-[#636366] mt-1 tabular-nums">
+                          {a.sentBy} · {a.sentAt.slice(0, 16).replace("T", " ")}
                         </div>
                       </div>
                       <button
@@ -1027,18 +1062,15 @@ export default function AdminPage() {
                 </div>
               )}
 
-              {/* Automated Notification Rules (Calibration, Friend Requests, Leaderboard, Streak, Daily) */}
-              <div className="apple-card divide-y divide-white/[0.06]">
-                <div className="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
-                  Automated Notification Templates
-                </div>
+              <div className="apple-card divide-y divide-white/[0.06] overflow-hidden">
+                <div className="px-4 py-3 apple-section-label">Automated Templates</div>
                 {data.notificationTemplates.map((tpl) => {
                   const isEditing = editingTplId === tpl.id;
                   const isEnabled = tpl.enabled !== false;
                   return (
                     <div key={tpl.id} className="p-4 space-y-2.5">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-[11px] uppercase tracking-[0.06em] text-[#10e760] font-semibold">
+                        <span className="text-[12px] text-[#30d158] font-medium capitalize">
                           {tpl.type.replace(/_/g, " ")}
                         </span>
                         <div className="flex items-center gap-2">
@@ -1053,7 +1085,7 @@ export default function AdminPage() {
                                 setTplBody(tpl.body);
                               }
                             }}
-                            className="px-2.5 py-1 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] text-[11px] text-white cursor-pointer"
+                            className="px-3 py-1 rounded-full bg-[#1c1c1e] hover:bg-white/[0.12] text-[11px] font-medium text-white cursor-pointer"
                           >
                             {isEditing ? "Cancel" : "Edit"}
                           </button>
@@ -1067,7 +1099,9 @@ export default function AdminPage() {
                                   id: tpl.id,
                                   enabled: !isEnabled,
                                 },
-                                `${tpl.type.replace(/_/g, " ")} ${!isEnabled ? "enabled" : "paused"}`
+                                `${tpl.type.replace(/_/g, " ")} ${
+                                  !isEnabled ? "enabled" : "paused"
+                                }`
                               )
                             }
                             className="ios-switch"
@@ -1083,13 +1117,13 @@ export default function AdminPage() {
                             type="text"
                             value={tplTitle}
                             onChange={(e) => setTplTitle(e.target.value)}
-                            className="w-full h-9 px-3 rounded-xl bg-black border border-white/12 text-[13px] text-white"
+                            className="apple-input w-full h-9 px-3 text-[13px]"
                           />
                           <textarea
                             rows={2}
                             value={tplBody}
                             onChange={(e) => setTplBody(e.target.value)}
-                            className="w-full p-2.5 rounded-xl bg-black border border-white/12 text-[12px] text-white resize-none"
+                            className="apple-input w-full p-2.5 text-[12px] resize-none"
                           />
                           <button
                             type="button"
@@ -1105,7 +1139,7 @@ export default function AdminPage() {
                               );
                               setEditingTplId(null);
                             }}
-                            className="px-3.5 h-8 rounded-lg bg-[#10e760] text-black font-semibold text-[12px] cursor-pointer"
+                            className="px-4 h-8 rounded-full bg-[#30d158] text-black font-semibold text-[12px] cursor-pointer"
                           >
                             Save Template
                           </button>
@@ -1127,10 +1161,10 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* 8. ADMIN EMAILS (FR-68) */}
+          {/* 8. ADMIN EMAILS */}
           {section === "admins" && (
             <div className="space-y-4">
-              <h1 className="text-[24px] font-bold tracking-[-0.02em] text-white">
+              <h1 className="text-[26px] font-semibold tracking-[-0.03em] text-white">
                 Admin Emails
               </h1>
               <div className="apple-card p-4 flex gap-2">
@@ -1139,7 +1173,7 @@ export default function AdminPage() {
                   value={newAdminEmail}
                   onChange={(e) => setNewAdminEmail(e.target.value)}
                   placeholder="admin@gmail.com"
-                  className="flex-1 h-10 px-3 rounded-xl bg-black border border-white/12 text-[13px] text-white"
+                  className="apple-input flex-1 h-10 px-3.5 text-[13px]"
                 />
                 <button
                   type="button"
@@ -1151,13 +1185,13 @@ export default function AdminPage() {
                     );
                     setNewAdminEmail("");
                   }}
-                  className="px-4 h-10 rounded-xl bg-[#10e760] text-black font-semibold text-[13px] cursor-pointer"
+                  className="px-4 h-10 rounded-full bg-[#30d158] text-black font-semibold text-[13px] cursor-pointer"
                 >
-                  Add Admin
+                  Add
                 </button>
               </div>
 
-              <div className="apple-card divide-y divide-white/[0.06]">
+              <div className="apple-card divide-y divide-white/[0.06] overflow-hidden">
                 {data.adminEmails.map((a) => (
                   <div key={a.email} className="p-4 flex items-center justify-between">
                     <div>
@@ -1173,7 +1207,7 @@ export default function AdminPage() {
                           `Removed ${a.email}`
                         )
                       }
-                      className="px-3 h-8 rounded-lg bg-white/[0.06] disabled:opacity-30 text-[12px] text-white cursor-pointer"
+                      className="px-3.5 h-8 rounded-full bg-[#1c1c1e] disabled:opacity-30 text-[12px] text-white cursor-pointer"
                     >
                       Remove
                     </button>
@@ -1183,17 +1217,24 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* 9. AUDIT LOG (FR-55) */}
+          {/* 9. AUDIT LOG */}
           {section === "audit" && (
             <div className="space-y-4">
-              <h1 className="text-[24px] font-bold tracking-[-0.02em] text-white">Audit Log</h1>
-              <div className="apple-card divide-y divide-white/[0.06]">
+              <h1 className="text-[26px] font-semibold tracking-[-0.03em] text-white">
+                Audit Log
+              </h1>
+              <div className="apple-card divide-y divide-white/[0.06] overflow-hidden">
                 {data.auditLog.map((entry) => (
-                  <div key={entry.id} className="p-4 flex flex-wrap items-center justify-between gap-2 text-[13px]">
+                  <div
+                    key={entry.id}
+                    className="p-4 flex flex-wrap items-center justify-between gap-2 text-[13px]"
+                  >
                     <div>
                       <span className="text-white font-medium">{entry.action}</span>
                       <span className="text-[#86868b] ml-2">({entry.target})</span>
-                      <div className="text-[11px] text-[#525257] mt-0.5">{entry.adminEmail}</div>
+                      <div className="text-[11px] text-[#636366] mt-0.5">
+                        {entry.adminEmail}
+                      </div>
                     </div>
                     <span className="text-[11px] text-[#86868b] tabular-nums">
                       {new Date(entry.timestamp).toLocaleString()}
@@ -1204,19 +1245,23 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* 10. EXPORT & SYSTEM HEALTH (FR-56 + Live Supabase Health) */}
+          {/* 10. EXPORT & SYSTEM HEALTH */}
           {section === "health" && (
             <div className="space-y-4">
-              <h1 className="text-[24px] font-bold tracking-[-0.02em] text-white">
-                Export & System Health
+              <h1 className="text-[26px] font-semibold tracking-[-0.03em] text-white">
+                System Health &amp; Export
               </h1>
 
               <div className="apple-card p-5 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-[14px] font-semibold text-white">Supabase Connection</span>
+                  <span className="text-[14px] font-semibold text-white">
+                    Supabase Connection
+                  </span>
                   <span
                     className={`inline-flex items-center gap-1.5 text-[12px] font-medium ${
-                      data.systemHealth.supabase.reachable ? "text-[#10e760]" : "text-amber-400"
+                      data.systemHealth.supabase.reachable
+                        ? "text-[#30d158]"
+                        : "text-amber-400"
                     }`}
                   >
                     <CheckCircle2 className="w-4 h-4" />
@@ -1228,44 +1273,46 @@ export default function AdminPage() {
                   </span>
                 </div>
                 <div className="text-[12px] text-[#86868b] space-y-1">
-                  <div>Project: {data.systemHealth.supabase.projectUrl || "Not configured"}</div>
-                  <div>JWKS: {data.systemHealth.supabase.jwksVerified ? "Verified" : "Unverified"}</div>
+                  <div>
+                    Project: {data.systemHealth.supabase.projectUrl || "Not configured"}
+                  </div>
+                  <div>
+                    JWKS: {data.systemHealth.supabase.jwksVerified ? "Verified" : "Unverified"}
+                  </div>
                   <div>{data.systemHealth.supabase.note}</div>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="apple-card p-4">
-                  <div className="text-[11px] uppercase tracking-[0.06em] text-[#86868b] font-semibold">
+                  <div className="text-[12px] text-[#86868b] font-medium">
                     Push Delivery
                   </div>
-                  <div className="text-[22px] font-bold text-[#10e760] tabular-nums mt-1">
+                  <div className="text-[22px] font-semibold text-[#30d158] tabular-nums mt-1">
                     {data.systemHealth.pushDeliveryRate}
                   </div>
                 </div>
                 <div className="apple-card p-4">
-                  <div className="text-[11px] uppercase tracking-[0.06em] text-[#86868b] font-semibold">
+                  <div className="text-[12px] text-[#86868b] font-medium">
                     Email Fallback
                   </div>
-                  <div className="text-[22px] font-bold text-white mt-1">
+                  <div className="text-[22px] font-semibold text-white mt-1">
                     {data.systemHealth.emailFallbackStatus}
                   </div>
                 </div>
                 <div className="apple-card p-4">
-                  <div className="text-[11px] uppercase tracking-[0.06em] text-[#86868b] font-semibold">
-                    API Latency
-                  </div>
-                  <div className="text-[22px] font-bold text-white tabular-nums mt-1">
+                  <div className="text-[12px] text-[#86868b] font-medium">API Latency</div>
+                  <div className="text-[22px] font-semibold text-white tabular-nums mt-1">
                     {data.systemHealth.apiLatencyMs} ms
                   </div>
                 </div>
               </div>
 
-              <div className="apple-card p-4 flex flex-wrap gap-3">
+              <div className="apple-card p-4 flex flex-wrap gap-2.5">
                 <button
                   type="button"
                   onClick={() => triggerAdminExport("csv")}
-                  className="px-4 h-10 rounded-xl bg-[#10e760] text-black text-[13px] font-semibold inline-flex items-center gap-2 cursor-pointer"
+                  className="px-4 h-10 rounded-full bg-[#30d158] text-black text-[13px] font-semibold inline-flex items-center gap-2 cursor-pointer"
                 >
                   <Download className="w-4 h-4" />
                   Export CSV
@@ -1273,7 +1320,7 @@ export default function AdminPage() {
                 <button
                   type="button"
                   onClick={() => triggerAdminExport("json")}
-                  className="px-4 h-10 rounded-xl bg-white/[0.08] text-white text-[13px] font-semibold inline-flex items-center gap-2 cursor-pointer"
+                  className="px-4 h-10 rounded-full bg-[#1c1c1e] hover:bg-white/[0.12] text-white text-[13px] font-medium inline-flex items-center gap-2 cursor-pointer"
                 >
                   <Download className="w-4 h-4" />
                   Export JSON

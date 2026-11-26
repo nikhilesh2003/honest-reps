@@ -29,7 +29,7 @@ function playCompletionChime() {
     const ctx = new AudioCtx();
     const now = ctx.currentTime;
 
-    const notes = [880, 1174.66]; // A5 -> D6 crisp minimal chime
+    const notes = [880, 1174.66];
     notes.forEach((freq, idx) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -103,40 +103,42 @@ export function RestTimerPill({
       : 0;
 
   const presets = [
-    { sec: 60, label: "60s" },
+    { sec: 60, label: "1m" },
     { sec: 90, label: "90s" },
     { sec: 120, label: "2m" },
     { sec: 180, label: "3m" },
   ];
 
   return (
-    <div className="fixed top-[calc(0.65rem+env(safe-area-inset-top,0px))] left-3 right-3 z-[65] max-w-[440px] mx-auto pointer-events-none">
-      <div className="pointer-events-auto rounded-2xl bg-[#0b0b0e]/95 backdrop-blur-xl border border-white/15 shadow-[0_10px_32px_rgba(0,0,0,0.75)] overflow-hidden">
-        <div className="px-3.5 py-2.5 flex items-center justify-between gap-2">
+    <div className="fixed top-[calc(0.55rem+env(safe-area-inset-top,0px))] left-3 right-3 z-[65] max-w-[400px] mx-auto pointer-events-none">
+      <div
+        className={`pointer-events-auto bg-[#1c1c1e]/95 backdrop-blur-2xl border border-white/[0.08] shadow-[0_10px_32px_rgba(0,0,0,0.6)] overflow-hidden transition-all ${
+          showPresets ? "rounded-[22px]" : "rounded-full"
+        }`}
+      >
+        <div className="px-3.5 py-2 flex items-center justify-between gap-2">
           <button
             type="button"
             onClick={() => setShowPresets((v) => !v)}
             className="flex items-center gap-2 min-w-0 text-left cursor-pointer group"
-            title="Tap to change rest duration preset"
+            title="Tap to change default rest duration"
           >
             <span
-              className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+              className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-colors ${
                 isDone
-                  ? "bg-[#10e760] text-black animate-pulse"
-                  : "bg-[#10e760]/15 text-[#10e760]"
+                  ? "bg-[#30d158] text-black"
+                  : "bg-[#30d158]/15 text-[#30d158]"
               }`}
             >
               <Timer className="w-3.5 h-3.5" />
             </span>
-            <div className="min-w-0">
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-[16px] font-bold text-white tabular-nums leading-none">
-                  {isDone ? "Ready" : formatClock(remainingSec)}
-                </span>
-                <span className="text-[10px] text-[#86868b] group-hover:text-white truncate">
-                  {isDone ? "Next set" : timer.label || "Rest"}
-                </span>
-              </div>
+            <div className="flex items-baseline gap-1.5 min-w-0">
+              <span className="text-[15px] font-semibold text-white tabular-nums leading-none">
+                {isDone ? "Ready" : formatClock(remainingSec)}
+              </span>
+              <span className="text-[11px] text-[#86868b] group-hover:text-white truncate">
+                {isDone ? "Next set" : timer.label || "Rest"}
+              </span>
             </div>
           </button>
 
@@ -148,7 +150,7 @@ export function RestTimerPill({
                   triggerHaptic("selection");
                   onAdjustSeconds(-15);
                 }}
-                className="px-2 h-7 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] text-[11px] font-semibold text-[#d1d1d6] tabular-nums cursor-pointer"
+                className="px-2 h-6 rounded-full bg-white/[0.06] hover:bg-white/[0.12] text-[11px] font-medium text-[#d1d1d6] tabular-nums cursor-pointer"
               >
                 -15s
               </button>
@@ -159,7 +161,7 @@ export function RestTimerPill({
                 triggerHaptic("selection");
                 onAdjustSeconds(30);
               }}
-              className="px-2 h-7 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] text-[11px] font-semibold text-[#10e760] tabular-nums cursor-pointer"
+              className="px-2 h-6 rounded-full bg-white/[0.06] hover:bg-white/[0.12] text-[11px] font-medium text-[#30d158] tabular-nums cursor-pointer"
             >
               +30s
             </button>
@@ -169,26 +171,17 @@ export function RestTimerPill({
                 triggerHaptic("light");
                 onDismiss();
               }}
-              aria-label="Skip rest timer"
-              className="px-2.5 h-7 rounded-lg bg-white/[0.08] hover:bg-white/[0.16] text-[11px] font-semibold text-white flex items-center gap-1 cursor-pointer"
+              aria-label="Dismiss rest timer"
+              className="w-6 h-6 rounded-full bg-white/[0.08] hover:bg-white/[0.16] text-[#86868b] hover:text-white flex items-center justify-center cursor-pointer"
             >
-              {isDone ? (
-                "Done"
-              ) : (
-                <>
-                  <span>Skip</span>
-                  <X className="w-3 h-3 text-[#86868b]" />
-                </>
-              )}
+              <X className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
 
         {showPresets && (
-          <div className="px-3.5 pb-2.5 pt-1 border-t border-white/[0.06] flex items-center justify-between gap-1.5">
-            <span className="text-[10px] uppercase tracking-[0.06em] text-[#86868b] font-semibold">
-              Default Rest
-            </span>
+          <div className="px-3.5 pb-2.5 pt-1.5 border-t border-white/[0.06] flex items-center justify-between gap-2">
+            <span className="text-[11px] text-[#86868b] font-medium">Default rest</span>
             <div className="flex items-center gap-1">
               {presets.map((p) => {
                 const active = defaultDuration === p.sec;
@@ -201,10 +194,10 @@ export function RestTimerPill({
                       onSelectPreset(p.sec);
                       setShowPresets(false);
                     }}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold tabular-nums cursor-pointer border ${
+                    className={`px-2.5 py-1 rounded-full text-[11px] font-medium tabular-nums cursor-pointer transition-colors ${
                       active
-                        ? "bg-[#10e760] text-black border-[#10e760]"
-                        : "bg-white/[0.04] text-[#86868b] border-white/[0.08] hover:text-white"
+                        ? "bg-[#30d158] text-black font-semibold"
+                        : "bg-white/[0.06] text-[#86868b] hover:text-white"
                     }`}
                   >
                     {p.label}
@@ -215,10 +208,9 @@ export function RestTimerPill({
           </div>
         )}
 
-        {/* Hairline Progress Bar */}
-        <div className="w-full h-[2.5px] bg-white/[0.06]">
+        <div className="w-full h-[2px] bg-white/[0.05]">
           <div
-            className="h-full bg-[#10e760] transition-all duration-200"
+            className="h-full bg-[#30d158] transition-all duration-200"
             style={{ width: `${isDone ? 100 : pct}%` }}
           />
         </div>

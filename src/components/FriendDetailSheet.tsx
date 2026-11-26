@@ -94,53 +94,53 @@ export function FriendDetailSheet({
             <button
               type="button"
               onClick={() => setShowAllMedals(false)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] text-[12px] font-medium text-white cursor-pointer"
+              className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[#30d158] cursor-pointer"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              Back to Profile
+              Back to profile
             </button>
 
             <MilestoneBadgesCard summary={detail.milestones} />
           </div>
         ) : (
           <div className="space-y-4">
-            {/* Live Gym Status Pill */}
-            <div className="px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.07] text-[12px] space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[#86868b]">Current Status</span>
+            {/* Inset Status & Privacy Group */}
+            <div className="rounded-2xl bg-[#1c1c1e] divide-y divide-white/[0.06] text-[13px]">
+              <div className="px-4 py-3 flex items-center justify-between">
+                <span className="text-[#86868b]">Status</span>
                 {detail.friend.inGym ? (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#10e760]/15 text-[#10e760] font-semibold border border-[#10e760]/40 shadow-[0_0_12px_rgba(16,231,96,0.3)]">
-                    <span className="w-2 h-2 rounded-full bg-[#10e760] animate-pulse" />
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#30d158]/15 text-[#30d158] text-[12px] font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#30d158]" />
                     In the Gym
                   </span>
                 ) : (
-                  <span className="text-[#86868b] font-medium">Not in gym</span>
+                  <span className="text-[#86868b]">Away</span>
                 )}
               </div>
+
               {detail.friend.gymName && (
-                <div className="flex items-center justify-between pt-1.5 border-t border-white/[0.06]">
+                <div className="px-4 py-3 flex items-center justify-between">
                   <span className="text-[#86868b]">Gym</span>
                   <span className="inline-flex items-center gap-1.5 text-white font-medium">
-                    <MapPin className="w-3.5 h-3.5 text-[#10e760]" />
+                    <MapPin className="w-3.5 h-3.5 text-[#30d158]" />
                     {detail.friend.gymName}
                   </span>
                 </div>
               )}
-            </div>
 
-            {/* Sharing status notice (FR-61, FR-69) */}
-            <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.07] text-[12px] text-[#86868b]">
-              {detail.friend.shareWorkoutDetails ? (
-                <>
-                  <Unlock className="w-3.5 h-3.5 text-[#10e760] shrink-0" />
-                  <span>Workout details shared · Tap any day on grid</span>
-                </>
-              ) : (
-                <>
-                  <Lock className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
-                  <span>Summary only · Weights and exercises private</span>
-                </>
-              )}
+              <div className="px-4 py-3 flex items-center gap-2 text-[12px] text-[#86868b]">
+                {detail.friend.shareWorkoutDetails ? (
+                  <>
+                    <Unlock className="w-3.5 h-3.5 text-[#30d158] shrink-0" />
+                    <span>Workout details shared · Tap any day</span>
+                  </>
+                ) : (
+                  <>
+                    <Lock className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
+                    <span>Summary only · Exercise weights private</span>
+                  </>
+                )}
+              </div>
             </div>
 
             {/* Summary Stats */}
@@ -159,7 +159,7 @@ export function FriendDetailSheet({
                         : "—",
                     badgeText: detail.monthStats.isMonthCalibrating
                       ? "Est. Monthly Average"
-                      : "Calibrated Monthly Average",
+                      : "Monthly Average",
                     isEstimated: detail.monthStats.isMonthCalibrating,
                     items: [
                       {
@@ -178,63 +178,59 @@ export function FriendDetailSheet({
                       : "Exercise weights & reps are private for this member.",
                   })
                 }
-                className="p-3 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.06] text-center cursor-pointer transition-colors"
+                className="p-3 rounded-2xl bg-[#1c1c1e] hover:bg-white/[0.08] text-center cursor-pointer transition-colors"
               >
                 <div
-                  className={`text-[20px] font-bold tabular-nums ${
+                  className={`text-[20px] font-semibold tabular-nums ${
                     detail.monthStats.isMonthCalibrating &&
                     detail.monthStats.monthEffort !== null
                       ? "text-amber-400"
-                      : "text-[#10e760]"
+                      : "text-[#30d158]"
                   }`}
                 >
                   {detail.monthStats.monthEffort ??
                     (detail.monthStats.isMonthCalibrating ? "Cal" : "—")}
                 </div>
-                <div className="text-[10px] uppercase tracking-[0.06em] text-[#86868b] mt-0.5">
+                <div className="text-[11px] text-[#86868b] mt-0.5">
                   {detail.monthStats.isMonthCalibrating ? "Month (Est.)" : "Month"}
                 </div>
               </button>
-              <div className="p-3 rounded-2xl bg-white/[0.03] border border-white/[0.06] text-center">
-                <div className="text-[20px] font-bold text-white tabular-nums">
+              <div className="p-3 rounded-2xl bg-[#1c1c1e] text-center">
+                <div className="text-[20px] font-semibold text-white tabular-nums">
                   {detail.monthStats.activeDaysThisMonth}
                 </div>
-                <div className="text-[10px] uppercase tracking-[0.06em] text-[#86868b] mt-0.5">
-                  Active
-                </div>
+                <div className="text-[11px] text-[#86868b] mt-0.5">Active</div>
               </div>
-              <div className="p-3 rounded-2xl bg-white/[0.03] border border-white/[0.06] text-center">
-                <div className="text-[20px] font-bold text-white tabular-nums">
+              <div className="p-3 rounded-2xl bg-[#1c1c1e] text-center">
+                <div className="text-[20px] font-semibold text-white tabular-nums">
                   {detail.monthStats.currentStreak}d
                 </div>
-                <div className="text-[10px] uppercase tracking-[0.06em] text-[#86868b] mt-0.5">
-                  Streak
-                </div>
+                <div className="text-[11px] text-[#86868b] mt-0.5">Streak</div>
               </div>
             </div>
 
-            {/* Friend's Medals: Received This Month + All Medals Button */}
+            {/* Friend's Medals */}
             {detail.milestones && (
-              <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.07] space-y-3">
+              <div className="p-3.5 rounded-2xl bg-[#1c1c1e] space-y-3">
                 <div className="flex items-center justify-between gap-2">
                   <div>
-                    <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b] flex items-center gap-1.5">
-                      <Trophy className="w-3.5 h-3.5 text-[#10e760]" />
-                      <span>Received This Month</span>
+                    <div className="text-[13px] font-medium text-white flex items-center gap-1.5">
+                      <Trophy className="w-3.5 h-3.5 text-[#30d158]" />
+                      <span>Medals</span>
                     </div>
-                    <div className="text-[11px] text-[#6e6e73] mt-0.5 tabular-nums">
+                    <div className="text-[11px] text-[#86868b] mt-0.5 tabular-nums">
                       {detail.milestones.earnedThisMonth.length > 0
-                        ? `${detail.milestones.earnedThisMonth.length} earned in ${detail.milestones.currentMonthPrefix}`
-                        : `No medals earned in ${detail.milestones.currentMonthPrefix} yet`}
+                        ? `${detail.milestones.earnedThisMonth.length} earned this month`
+                        : "None earned this month yet"}
                     </div>
                   </div>
                   <button
                     type="button"
                     onClick={() => setShowAllMedals(true)}
-                    className="px-3 py-1.5 rounded-full bg-white/[0.07] hover:bg-white/[0.14] border border-white/[0.1] text-[11px] font-semibold text-white inline-flex items-center gap-1 transition-colors cursor-pointer shrink-0"
+                    className="text-[12px] font-medium text-[#30d158] inline-flex items-center gap-0.5 cursor-pointer shrink-0"
                   >
-                    <span>All Medals ({detail.milestones.totalUnlocked})</span>
-                    <ChevronRight className="w-3.5 h-3.5 text-[#86868b]" />
+                    <span>All ({detail.milestones.totalUnlocked})</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
 
@@ -278,22 +274,22 @@ export function FriendDetailSheet({
               </div>
             )}
 
-            {/* Friend's Year Activity Grid (FR-61) */}
+            {/* Friend's Year Activity Grid */}
             <YearHeatmap
               summaries365={detail.summaries365}
               thresholds={thresholds}
               hidePrivateDetails={true}
               shareDetailsEnabled={detail.friend.shareWorkoutDetails}
               ownerName={detail.friend.name}
-              title="Activity Grid"
+              title="Activity"
             />
 
-            {/* Month Daily Efforts & Muscle Groups (FR-37) */}
+            {/* Month Daily Efforts */}
             <div className="space-y-2">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
+              <div className="text-[12px] font-medium text-[#86868b] px-0.5">
                 This Month
               </div>
-              <div className="space-y-1.5 max-h-56 overflow-y-auto no-scrollbar">
+              <div className="rounded-2xl bg-[#1c1c1e] divide-y divide-white/[0.06] max-h-56 overflow-y-auto no-scrollbar">
                 {[...detail.monthDaily]
                   .filter((d) => d.itemCount > 0 || d.isRest)
                   .reverse()
@@ -301,7 +297,7 @@ export function FriendDetailSheet({
                   .map((day) => (
                     <div
                       key={day.date}
-                      className="px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-between text-[13px]"
+                      className="px-4 py-2.5 flex items-center justify-between text-[13px]"
                     >
                       <div>
                         <span className="text-white font-medium">{day.shortLabel}</span>
@@ -323,7 +319,7 @@ export function FriendDetailSheet({
                         className="px-2 py-1 rounded-lg hover:bg-white/[0.06] active:scale-95 transition-all cursor-pointer"
                       >
                         {day.status === "Scored" && day.effortScore !== null ? (
-                          <span className="font-semibold text-[#10e760] tabular-nums">
+                          <span className="font-semibold text-[#30d158] tabular-nums">
                             {day.effortScore}
                           </span>
                         ) : day.status === "Calibrating" && day.effortScore !== null ? (
@@ -336,7 +332,7 @@ export function FriendDetailSheet({
                         ) : day.status === "Calibrating" ? (
                           <span className="text-[11px] text-amber-400">Calibrating</span>
                         ) : (
-                          <span className="text-[11px] text-[#86868b]">Rest</span>
+                          <span className="text-[12px] text-[#86868b]">Rest</span>
                         )}
                       </button>
                     </div>
@@ -348,12 +344,12 @@ export function FriendDetailSheet({
             {onRemoveFriend &&
               currentUserId &&
               detail.friend.userId !== currentUserId && (
-                <div className="pt-2 border-t border-white/[0.06]">
+                <div className="pt-1">
                   {!confirmRemove ? (
                     <button
                       type="button"
                       onClick={() => setConfirmRemove(true)}
-                      className="w-full h-11 rounded-xl bg-white/[0.04] hover:bg-red-500/15 border border-white/[0.08] hover:border-red-500/30 text-[13px] font-medium text-[#86868b] hover:text-red-300 flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                      className="w-full h-11 rounded-full bg-[#1c1c1e] hover:bg-red-500/15 text-[13px] font-medium text-[#86868b] hover:text-red-300 flex items-center justify-center gap-2 transition-colors cursor-pointer"
                     >
                       <UserMinus className="w-4 h-4" />
                       Remove Friend
@@ -364,7 +360,7 @@ export function FriendDetailSheet({
                         type="button"
                         disabled={removing}
                         onClick={() => setConfirmRemove(false)}
-                        className="flex-1 h-10 rounded-xl bg-white/[0.06] text-white text-[13px] font-medium cursor-pointer"
+                        className="flex-1 h-10 rounded-full bg-[#1c1c1e] text-white text-[13px] font-medium cursor-pointer"
                       >
                         Cancel
                       </button>
@@ -374,15 +370,18 @@ export function FriendDetailSheet({
                         onClick={async () => {
                           setRemoving(true);
                           try {
-                            await onRemoveFriend(detail.friend.userId, detail.friend.username);
+                            await onRemoveFriend(
+                              detail.friend.userId,
+                              detail.friend.username
+                            );
                             onClose();
                           } finally {
                             setRemoving(false);
                           }
                         }}
-                        className="flex-1 h-10 rounded-xl bg-red-500/25 hover:bg-red-500/35 border border-red-500/40 text-red-200 text-[13px] font-semibold cursor-pointer"
+                        className="flex-1 h-10 rounded-full bg-red-500/25 text-red-200 text-[13px] font-semibold cursor-pointer"
                       >
-                        {removing ? "Removing..." : "Confirm Remove"}
+                        {removing ? "Removing..." : "Confirm"}
                       </button>
                     </div>
                   )}

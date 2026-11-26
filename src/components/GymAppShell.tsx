@@ -883,19 +883,19 @@ export function GymAppShell() {
       {nearbyGymPrompt && (
         <aside
           aria-label="Nearby gym discovery"
-          className="fixed top-[calc(0.5rem+env(safe-area-inset-top,0px))] left-3 right-3 z-50 max-w-[480px] mx-auto p-3.5 rounded-2xl bg-black/95 border border-[#10e760]/40 shadow-2xl backdrop-blur-xl flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-3"
+          className="fixed top-[calc(0.5rem+env(safe-area-inset-top,0px))] left-3 right-3 z-50 max-w-[460px] mx-auto p-3.5 rounded-2xl bg-[#1c1c1e]/95 border border-white/[0.08] shadow-2xl backdrop-blur-2xl flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-3"
         >
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-[#10e760]/15 border border-[#10e760]/30 flex items-center justify-center shrink-0">
-              <MapPin className="w-4 h-4 text-[#10e760]" />
+            <div className="w-8 h-8 rounded-full bg-[#30d158]/15 flex items-center justify-center shrink-0">
+              <MapPin className="w-4 h-4 text-[#30d158]" />
             </div>
             <div className="min-w-0">
               <div className="text-[13px] font-semibold text-white truncate">
-                Are you at {nearbyGymPrompt.gym.name}?
+                At {nearbyGymPrompt.gym.name}?
               </div>
               <div className="text-[11px] text-[#86868b] truncate">
                 {nearbyGymPrompt.gym.memberCount}{" "}
-                {nearbyGymPrompt.gym.memberCount === 1 ? "member trains" : "members train"} here · Join to auto-check-in
+                {nearbyGymPrompt.gym.memberCount === 1 ? "member" : "members"} · Auto-check-in
               </div>
             </div>
           </div>
@@ -903,14 +903,14 @@ export function GymAppShell() {
             <button
               type="button"
               onClick={() => handleDismissNearbyGym(nearbyGymPrompt.gym.id)}
-              className="px-2.5 py-1.5 text-[11px] font-medium text-[#86868b] hover:text-white cursor-pointer"
+              className="px-2.5 py-1.5 text-[12px] font-medium text-[#86868b] hover:text-white cursor-pointer"
             >
               Not now
             </button>
             <button
               type="button"
               onClick={() => handleJoinNearbyGym(nearbyGymPrompt.gym)}
-              className="px-3.5 py-1.5 rounded-xl bg-[#10e760] text-black text-[12px] font-semibold hover:bg-[#25d658] cursor-pointer"
+              className="px-3.5 py-1.5 rounded-full bg-[#30d158] text-black text-[12px] font-semibold cursor-pointer"
             >
               Join
             </button>
@@ -922,18 +922,18 @@ export function GymAppShell() {
       {!nearbyGymPrompt && osmGymPrompt && (
         <aside
           aria-label="Detected nearby gym"
-          className="fixed top-[calc(0.5rem+env(safe-area-inset-top,0px))] left-3 right-3 z-50 max-w-[480px] mx-auto p-3.5 rounded-2xl bg-black/95 border border-[#10e760]/40 shadow-2xl backdrop-blur-xl flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-3"
+          className="fixed top-[calc(0.5rem+env(safe-area-inset-top,0px))] left-3 right-3 z-50 max-w-[460px] mx-auto p-3.5 rounded-2xl bg-[#1c1c1e]/95 border border-white/[0.08] shadow-2xl backdrop-blur-2xl flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-3"
         >
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-[#10e760]/15 border border-[#10e760]/30 flex items-center justify-center shrink-0">
-              <MapPin className="w-4 h-4 text-[#10e760]" />
+            <div className="w-8 h-8 rounded-full bg-[#30d158]/15 flex items-center justify-center shrink-0">
+              <MapPin className="w-4 h-4 text-[#30d158]" />
             </div>
             <div className="min-w-0">
               <div className="text-[13px] font-semibold text-white truncate">
-                Are you at {osmGymPrompt.name}?
+                At {osmGymPrompt.name}?
               </div>
               <div className="text-[11px] text-[#86868b] truncate">
-                ~{osmGymPrompt.distanceMeters}m away · Join to save &amp; auto-check-in
+                ~{osmGymPrompt.distanceMeters}m away · Save for auto-check-in
               </div>
             </div>
           </div>
@@ -941,14 +941,14 @@ export function GymAppShell() {
             <button
               type="button"
               onClick={() => setOsmGymPrompt(null)}
-              className="px-2.5 py-1.5 text-[11px] font-medium text-[#86868b] hover:text-white cursor-pointer"
+              className="px-2.5 py-1.5 text-[12px] font-medium text-[#86868b] hover:text-white cursor-pointer"
             >
               Not now
             </button>
             <button
               type="button"
               onClick={() => handleJoinOsmGym(osmGymPrompt)}
-              className="px-3.5 py-1.5 rounded-xl bg-[#10e760] text-black text-[12px] font-semibold hover:bg-[#25d658] cursor-pointer"
+              className="px-3.5 py-1.5 rounded-full bg-[#30d158] text-black text-[12px] font-semibold cursor-pointer"
             >
               Join
             </button>
@@ -960,18 +960,18 @@ export function GymAppShell() {
       {!nearbyGymPrompt && !osmGymPrompt && noNearbyGymPrompt && (
         <aside
           aria-label="Add gym location"
-          className="fixed top-[calc(0.5rem+env(safe-area-inset-top,0px))] left-3 right-3 z-50 max-w-[480px] mx-auto p-3.5 rounded-2xl bg-black/95 border border-white/15 shadow-2xl backdrop-blur-xl flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-3"
+          className="fixed top-[calc(0.5rem+env(safe-area-inset-top,0px))] left-3 right-3 z-50 max-w-[460px] mx-auto p-3.5 rounded-2xl bg-[#1c1c1e]/95 border border-white/[0.08] shadow-2xl backdrop-blur-2xl flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-3"
         >
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-white/[0.06] border border-white/10 flex items-center justify-center shrink-0">
-              <MapPin className="w-4 h-4 text-[#10e760]" />
+            <div className="w-8 h-8 rounded-full bg-white/[0.06] flex items-center justify-center shrink-0">
+              <MapPin className="w-4 h-4 text-[#30d158]" />
             </div>
             <div className="min-w-0">
               <div className="text-[13px] font-semibold text-white truncate">
-                No gym found nearby
+                Save this gym location?
               </div>
               <div className="text-[11px] text-[#86868b] truncate">
-                Add this gym&apos;s location &amp; name for auto-check-in
+                Pin your gym for automatic check-ins
               </div>
             </div>
           </div>
@@ -979,7 +979,7 @@ export function GymAppShell() {
             <button
               type="button"
               onClick={() => setNoNearbyGymPrompt(false)}
-              className="px-2.5 py-1.5 text-[11px] font-medium text-[#86868b] hover:text-white cursor-pointer"
+              className="px-2.5 py-1.5 text-[12px] font-medium text-[#86868b] hover:text-white cursor-pointer"
             >
               Not now
             </button>
@@ -989,30 +989,30 @@ export function GymAppShell() {
                 setNoNearbyGymPrompt(false);
                 setGymLocationOpen(true);
               }}
-              className="px-3.5 py-1.5 rounded-xl bg-[#10e760] text-black text-[12px] font-semibold hover:bg-[#25d658] cursor-pointer"
+              className="px-3.5 py-1.5 rounded-full bg-[#30d158] text-black text-[12px] font-semibold cursor-pointer"
             >
-              Add Gym
+              Pin
             </button>
           </div>
         </aside>
       )}
 
-      {/* Minimal Top App Bar with Safe Area, Offline Pill, Notifications & Profile */}
-      <header className="sticky top-0 z-30 w-full bg-black/85 backdrop-blur-xl border-b border-white/[0.06] pt-safe">
-        <div className="max-w-[480px] mx-auto px-4 h-16 flex items-center justify-between gap-2">
+      {/* Minimal Apple Top Bar */}
+      <header className="sticky top-0 z-30 w-full bg-black/80 backdrop-blur-2xl border-b border-white/[0.05] pt-safe">
+        <div className="max-w-[460px] mx-auto px-4 h-14 flex items-center justify-between gap-2">
           <button
             type="button"
             onClick={() => switchTab("home")}
-            className="flex items-center gap-3 cursor-pointer"
+            className="flex items-center gap-2.5 cursor-pointer"
           >
-            <span className="brand-icon-box w-14 h-11 rounded-[12px] flex items-center justify-center shrink-0 overflow-hidden">
+            <span className="brand-icon-box w-8 h-8 rounded-[9px] flex items-center justify-center shrink-0 overflow-hidden">
               <img
                 src="/icons/logo-icon.png"
                 alt="Honest Reps"
-                className="w-14 h-14 max-w-none object-contain scale-[1.18]"
+                className="w-8 h-8 object-contain"
               />
             </span>
-            <span className="text-[17px] font-semibold tracking-[-0.02em] text-white">
+            <span className="text-[16px] font-semibold tracking-[-0.02em] text-white">
               Honest Reps
             </span>
           </button>
@@ -1021,7 +1021,7 @@ export function GymAppShell() {
             {isOffline && (
               <span
                 title="Offline — workouts save locally and sync automatically when back online"
-                className="px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[10px] font-semibold flex items-center gap-1"
+                className="px-2.5 py-1 rounded-full bg-amber-500/12 text-amber-400 text-[11px] font-medium flex items-center gap-1"
               >
                 <WifiOff className="w-3 h-3" />
                 Offline
@@ -1036,11 +1036,11 @@ export function GymAppShell() {
                 setInboxItems(read);
                 setNotifInboxOpen(true);
               }}
-              className="relative w-10 h-10 rounded-full bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] flex items-center justify-center text-[#f5f5f7] cursor-pointer"
+              className="relative w-9 h-9 rounded-full bg-white/[0.06] hover:bg-white/[0.1] flex items-center justify-center text-[#f5f5f7] transition-colors cursor-pointer"
             >
-              <Bell className="w-4 h-4" />
+              <Bell className="w-4 h-4" strokeWidth={1.85} />
               {inboxItems.filter((n) => !n.read).length > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-[17px] h-[17px] px-1 rounded-full bg-[#10e760] text-black text-[10px] font-bold flex items-center justify-center tabular-nums">
+                <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] px-1 rounded-full bg-[#30d158] text-black text-[10px] font-bold flex items-center justify-center tabular-nums">
                   {inboxItems.filter((n) => !n.read).length}
                 </span>
               )}
@@ -1050,14 +1050,14 @@ export function GymAppShell() {
               type="button"
               aria-label="Profile"
               onClick={() => switchTab("profile")}
-              className={`h-10 px-2.5 rounded-full border flex items-center gap-1.5 transition-colors cursor-pointer ${
+              className={`h-9 px-3 rounded-full flex items-center gap-1.5 transition-colors cursor-pointer ${
                 activeTab === "profile"
-                  ? "bg-[#10e760]/15 border-[#10e760]/50 text-[#10e760]"
-                  : "bg-white/[0.05] hover:bg-white/[0.1] border-white/[0.08] text-[#f5f5f7]"
+                  ? "bg-white text-black font-semibold"
+                  : "bg-white/[0.06] hover:bg-white/[0.1] text-[#f5f5f7] font-medium"
               }`}
             >
-              <User className="w-4 h-4" />
-              <span className="text-[12px] font-medium max-w-[76px] truncate">
+              <User className="w-3.5 h-3.5" strokeWidth={2} />
+              <span className="text-[12px] max-w-[74px] truncate">
                 {state.profile.name.split(" ")[0]}
               </span>
             </button>
@@ -1066,11 +1066,11 @@ export function GymAppShell() {
       </header>
 
       {/* Main Content Container */}
-      <main className="w-full max-w-[480px] flex-1 px-4 pt-3 pb-[calc(6rem+env(safe-area-inset-bottom,0px))]">
+      <main className="w-full max-w-[460px] flex-1 px-4 pt-4 pb-[calc(5.75rem+env(safe-area-inset-bottom,0px))]">
         {notifPerm === "default" && !permBannerDismissed && (
-          <div className="mb-3 p-3 rounded-2xl bg-[#10e760]/10 border border-[#10e760]/30 flex items-center justify-between gap-2.5">
-            <div className="text-[12px] text-white leading-snug min-w-0">
-              Enable device notifications to receive workout &amp; friend alerts directly on your phone.
+          <div className="mb-4 px-4 py-3 rounded-2xl bg-[#111113] border border-white/[0.06] flex items-center justify-between gap-3">
+            <div className="text-[12px] text-[#86868b] leading-snug min-w-0">
+              Turn on notifications for workout reminders and friend updates.
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
               <button
@@ -1095,9 +1095,9 @@ export function GymAppShell() {
                     showToast("Allow notifications in browser settings", "error");
                   }
                 }}
-                className="px-3 py-1.5 rounded-xl bg-[#10e760] text-black text-[12px] font-semibold cursor-pointer"
+                className="px-3 py-1.5 rounded-full bg-[#30d158] text-black text-[12px] font-semibold cursor-pointer"
               >
-                Enable
+                Allow
               </button>
               <button
                 type="button"
@@ -1217,8 +1217,8 @@ export function GymAppShell() {
       </main>
 
       {/* Bottom iOS-Style Tab Bar with Safe Area */}
-      <nav className="fixed bottom-0 left-0 right-0 z-30 bg-black/90 backdrop-blur-xl border-t border-white/[0.08] pb-safe">
-        <div className="max-w-[480px] mx-auto px-2 h-[68px] grid grid-cols-5 items-center">
+      <nav className="fixed bottom-0 left-0 right-0 z-30 bg-black/85 backdrop-blur-2xl border-t border-white/[0.05] pb-safe">
+        <div className="max-w-[460px] mx-auto px-2 h-[60px] grid grid-cols-5 items-center">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = activeTab === item.id;
@@ -1232,14 +1232,14 @@ export function GymAppShell() {
                   triggerHaptic("selection");
                   switchTab(item.id);
                 }}
-                className={`relative flex flex-col items-center justify-center gap-1 py-1.5 transition-colors cursor-pointer ${
-                  active ? "text-[#10e760]" : "text-[#86868b] hover:text-white"
+                className={`relative flex flex-col items-center justify-center gap-1 py-1 transition-colors cursor-pointer ${
+                  active ? "text-[#30d158]" : "text-[#86868b] hover:text-white"
                 }`}
               >
                 <div className="relative">
-                  <Icon className="w-[21px] h-[21px]" strokeWidth={active ? 2.2 : 1.75} />
+                  <Icon className="w-[20px] h-[20px]" strokeWidth={active ? 2.15 : 1.7} />
                   {hasBadge && (
-                    <span className="absolute -top-0.5 -right-1 w-2 h-2 rounded-full bg-[#10e760]" />
+                    <span className="absolute -top-0.5 -right-1 w-2 h-2 rounded-full bg-[#30d158]" />
                   )}
                 </div>
                 <span className="text-[10px] font-medium tracking-[-0.01em]">
@@ -1322,9 +1322,9 @@ export function GymAppShell() {
           {typeof window !== "undefined" &&
             "Notification" in window &&
             Notification.permission !== "granted" && (
-              <div className="p-3.5 rounded-2xl bg-[#10e760]/10 border border-[#10e760]/30 flex items-center justify-between gap-3">
-                <div className="text-[12px] text-white">
-                  Enable browser push alerts to receive notifications even when the tab is in the background.
+              <div className="p-3.5 rounded-2xl bg-[#1c1c1e] border border-white/[0.06] flex items-center justify-between gap-3">
+                <div className="text-[12px] text-[#d1d1d6] leading-snug">
+                  Allow push alerts to receive reminders when the app is closed.
                 </div>
                 <button
                   type="button"
@@ -1344,20 +1344,20 @@ export function GymAppShell() {
                       showToast("Allow notifications in browser settings", "error");
                     }
                   }}
-                  className="shrink-0 px-3 py-1.5 rounded-xl bg-[#10e760] text-black text-[12px] font-semibold cursor-pointer"
+                  className="shrink-0 px-3 py-1.5 rounded-full bg-[#30d158] text-black text-[12px] font-semibold cursor-pointer"
                 >
-                  Enable
+                  Allow
                 </button>
               </div>
             )}
 
           {inboxItems.length === 0 ? (
-            <div className="py-8 text-center text-[13px] text-[#86868b]">
+            <div className="py-10 text-center text-[13px] text-[#86868b]">
               No notifications yet.
             </div>
           ) : (
             <>
-              <div className="flex items-center justify-between text-[11px] text-[#86868b]">
+              <div className="flex items-center justify-between text-[12px] text-[#86868b] px-0.5">
                 <span>Recent ({inboxItems.length})</span>
                 <button
                   type="button"
@@ -1370,7 +1370,7 @@ export function GymAppShell() {
                   Clear all
                 </button>
               </div>
-              <div className="space-y-2 max-h-72 overflow-y-auto no-scrollbar">
+              <div className="rounded-2xl bg-[#1c1c1e] border border-white/[0.05] divide-y divide-white/[0.06] max-h-72 overflow-y-auto no-scrollbar">
                 {inboxItems.map((item) => {
                   const targetTab: TabId | null =
                     item.url?.includes("tab=friends") || item.category === "friend"
@@ -1388,15 +1388,15 @@ export function GymAppShell() {
                           setNotifInboxOpen(false);
                         }
                       }}
-                      className={`w-full text-left p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.07] space-y-1 ${
-                        targetTab ? "hover:bg-white/[0.06] cursor-pointer" : "cursor-default"
+                      className={`w-full text-left px-4 py-3 space-y-1 ${
+                        targetTab ? "hover:bg-white/[0.04] cursor-pointer" : "cursor-default"
                       }`}
                     >
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-[13px] font-semibold text-white">
                           {item.title}
                         </span>
-                        <span className="text-[10px] uppercase tracking-[0.05em] text-[#10e760] font-semibold">
+                        <span className="text-[11px] text-[#86868b] capitalize">
                           {item.category}
                         </span>
                       </div>
@@ -1404,8 +1404,8 @@ export function GymAppShell() {
                         {item.body}
                       </div>
                       {targetTab === "friends" && (
-                        <div className="text-[11px] font-medium text-[#10e760] pt-0.5">
-                          Tap to open Friends →
+                        <div className="text-[11px] font-medium text-[#30d158] pt-0.5">
+                          Open Friends
                         </div>
                       )}
                     </button>

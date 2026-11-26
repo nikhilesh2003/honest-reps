@@ -2,63 +2,65 @@
 
 :root {
   --bg-black: #000000;
-  --bg-card: #0a0a0c;
-  --bg-card-elevated: #121215;
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.16);
+  --bg-card: #111113;
+  --bg-card-elevated: #1c1c1e;
+  --bg-sheet: #141416;
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-strong: rgba(255, 255, 255, 0.12);
   --text-primary: #f5f5f7;
   --text-secondary: #86868b;
-  --text-muted: #525257;
+  --text-muted: #636366;
 
-  /* GitHub-Style Pure Green Contribution Ramp (Dark Mode) */
-  --effort-nolog: #161b22;
-  --effort-nolog-border: rgba(255, 255, 255, 0.04);
-  --effort-very-low: #0e4429;
-  --effort-low: #006d32;
-  --effort-steady: #26a641;
-  --effort-high: #39d353;
-  --effort-very-high: #10e760;
+  /* Matte Green Contribution Ramp (Dark Mode — Apple Fitness inspired) */
+  --effort-nolog: #1c1c1e;
+  --effort-nolog-border: rgba(255, 255, 255, 0.03);
+  --effort-very-low: #103820;
+  --effort-low: #175c31;
+  --effort-steady: #228b46;
+  --effort-high: #2ab356;
+  --effort-very-high: #30d158;
   --effort-calibrating: #d97706;
-  --effort-rest: #2d333b;
+  --effort-rest: #2c2c2e;
 
-  /* 5-Step Orange Ramp for Estimated (Calibrating) Efforts (<50, 60, 70, 80, 90+) */
-  --est-very-low: #451a03;
-  --est-low: #7c2d12;
-  --est-steady: #c2410c;
-  --est-high: #ea580c;
-  --est-very-high: #ff7a00;
+  /* 5-Step Warm Amber Ramp for Estimated (Calibrating) Efforts */
+  --est-very-low: #3b1d06;
+  --est-low: #6c300d;
+  --est-steady: #a34811;
+  --est-high: #d96318;
+  --est-very-high: #ff9f0a;
 
-  --accent: #10e760;
+  --accent: #30d158;
 }
 
-/* Apple Light Mode Theme */
+/* Apple Light Mode Theme (iOS Grouped Background + Pure White Cards) */
 html[data-theme="light"] {
   --bg-black: #f2f2f7;
   --bg-card: #ffffff;
-  --bg-card-elevated: #e5e5ea;
-  --border-subtle: rgba(0, 0, 0, 0.08);
-  --border-strong: rgba(0, 0, 0, 0.16);
+  --bg-card-elevated: #f2f2f7;
+  --bg-sheet: #ffffff;
+  --border-subtle: rgba(0, 0, 0, 0.06);
+  --border-strong: rgba(0, 0, 0, 0.12);
   --text-primary: #1d1d1f;
   --text-secondary: #6e6e73;
   --text-muted: #8e8e93;
 
   --effort-nolog: #ebedf0;
-  --effort-nolog-border: rgba(0, 0, 0, 0.05);
-  --effort-very-low: #9be9a8;
-  --effort-low: #40c463;
-  --effort-steady: #30a14e;
-  --effort-high: #216e39;
+  --effort-nolog-border: rgba(0, 0, 0, 0.04);
+  --effort-very-low: #a7f3bc;
+  --effort-low: #4ade80;
+  --effort-steady: #22c55e;
+  --effort-high: #16a34a;
   --effort-very-high: #15803d;
   --effort-calibrating: #d97706;
-  --effort-rest: #cfd5df;
+  --effort-rest: #d1d5db;
 
   --est-very-low: #fed7aa;
   --est-low: #fdba74;
   --est-steady: #fb923c;
   --est-high: #f97316;
-  --est-very-high: #c2410c;
+  --est-very-high: #ea580c;
 
-  --accent: #16a34a;
+  --accent: #248a3d;
 }
 
 * {
@@ -86,9 +88,10 @@ html,
 body {
   background-color: var(--bg-black);
   color: var(--text-primary);
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.011em;
   margin: 0;
   padding: 0;
   min-height: 100%;
@@ -100,7 +103,7 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* Hide scrollbars cleanly on Windows/macOS/iOS filter strips */
+/* Hide scrollbars cleanly on filter strips */
 .no-scrollbar {
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -109,7 +112,7 @@ body {
   display: none;
 }
 
-/* Apple-style hairline card */
+/* Quiet Apple Surface Card */
 .apple-card {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
@@ -117,10 +120,77 @@ body {
 }
 
 html[data-theme="light"] .apple-card {
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
-/* Effort tile states (WCAG accessible differentiation beyond color alone, UI/UX 8.2) */
+/* Calm Sentence-Case Section Header (Apple Health / Fitness style) */
+.apple-section-label {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text-secondary);
+}
+
+/* Native iOS Filled Input (No harsh black hole borders) */
+.apple-input {
+  background-color: var(--bg-card-elevated);
+  border: 1px solid transparent;
+  border-radius: 12px;
+  color: var(--text-primary);
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+.apple-input::placeholder {
+  color: var(--text-muted);
+}
+.apple-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+html[data-theme="light"] .apple-input {
+  background-color: #f2f2f7;
+}
+
+/* Native iOS Segmented Control */
+.apple-segmented {
+  display: flex;
+  align-items: center;
+  background-color: var(--bg-card-elevated);
+  padding: 3px;
+  border-radius: 11px;
+  gap: 2px;
+}
+html[data-theme="light"] .apple-segmented {
+  background-color: #e5e5ea;
+}
+.apple-segmented-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border-radius: 8.5px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+  cursor: pointer;
+}
+.apple-segmented-btn:hover {
+  color: var(--text-primary);
+}
+.apple-segmented-btn[data-active="true"] {
+  background-color: #323236;
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28);
+}
+html[data-theme="light"] .apple-segmented-btn[data-active="true"] {
+  background-color: #ffffff;
+  color: #1d1d1f;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Flat Matte Effort Tile States (Zero neon glow) */
 .tile-nolog {
   background-color: var(--effort-nolog);
   border: 1px solid var(--effort-nolog-border);
@@ -139,7 +209,6 @@ html[data-theme="light"] .apple-card {
 }
 .tile-very-high {
   background-color: var(--effort-very-high);
-  box-shadow: 0 0 6px rgba(16, 231, 96, 0.22);
 }
 .tile-calibrating {
   background-color: var(--effort-calibrating);
@@ -158,31 +227,50 @@ html[data-theme="light"] .apple-card {
 }
 .tile-est-very-high {
   background-color: var(--est-very-high);
-  box-shadow: 0 0 6px rgba(255, 122, 0, 0.24);
 }
 .tile-rest {
   background-color: var(--effort-rest);
 }
 
-/* Light-mode adaptive overrides for dark-first utility classes across all screens */
+/* Light-mode adaptive overrides across all screens */
 html[data-theme="light"] .bg-black {
   background-color: #f2f2f7 !important;
 }
+html[data-theme="light"] .bg-black\/80,
 html[data-theme="light"] .bg-black\/85,
-html[data-theme="light"] .bg-black\/90 {
-  background-color: rgba(242, 242, 247, 0.88) !important;
+html[data-theme="light"] .bg-black\/90,
+html[data-theme="light"] .bg-black\/95 {
+  background-color: rgba(242, 242, 247, 0.86) !important;
 }
 html[data-theme="light"] .bg-\[\#0a0a0c\],
-html[data-theme="light"] .bg-\[\#0c0c0e\] {
+html[data-theme="light"] .bg-\[\#0c0c0e\],
+html[data-theme="light"] .bg-\[\#111113\],
+html[data-theme="light"] .bg-\[\#141416\] {
   background-color: #ffffff !important;
 }
 html[data-theme="light"] .bg-\[\#050506\],
 html[data-theme="light"] .bg-\[\#070709\],
-html[data-theme="light"] .bg-\[\#08080b\] {
+html[data-theme="light"] .bg-\[\#08080b\],
+html[data-theme="light"] .bg-\[\#1c1c1e\] {
   background-color: #f2f2f7 !important;
 }
-html[data-theme="light"] .bg-\[\#16161a\]\/95 {
-  background-color: rgba(255, 255, 255, 0.96) !important;
+html[data-theme="light"] .bg-\[\#2c2c2e\] {
+  background-color: #e5e5ea !important;
+}
+html[data-theme="light"] .bg-black\/35,
+html[data-theme="light"] .bg-black\/40,
+html[data-theme="light"] .bg-black\/50,
+html[data-theme="light"] .bg-black\/60 {
+  background-color: #ffffff !important;
+}
+html[data-theme="light"] select option {
+  background-color: #ffffff !important;
+  color: #1d1d1f !important;
+}
+html[data-theme="light"] .bg-\[\#16161a\]\/95,
+html[data-theme="light"] .bg-\[\#1c1c1e\]\/95,
+html[data-theme="light"] .bg-\[\#0b0b0e\]\/95 {
+  background-color: rgba(255, 255, 255, 0.94) !important;
 }
 html[data-theme="light"] .text-white,
 html[data-theme="light"] .text-\[\#f5f5f7\],
@@ -192,12 +280,16 @@ html[data-theme="light"] .text-\[\#d1d1d6\] {
 html[data-theme="light"] .text-\[\#a1a1a6\] {
   color: #48484a !important;
 }
-html[data-theme="light"] .text-\[\#86868b\] {
+html[data-theme="light"] .text-\[\#86868b\],
+html[data-theme="light"] .text-\[\#636366\],
+html[data-theme="light"] .text-\[\#525257\] {
   color: #6e6e73 !important;
 }
-html[data-theme="light"] .text-\[\#10e760\] {
+html[data-theme="light"] .text-\[\#10e760\],
+html[data-theme="light"] .text-\[\#30d158\] {
   color: #15803d !important;
 }
+html[data-theme="light"] .border-white\/\[0\.04\],
 html[data-theme="light"] .border-white\/\[0\.05\],
 html[data-theme="light"] .border-white\/\[0\.06\],
 html[data-theme="light"] .border-white\/\[0\.07\],
@@ -205,11 +297,13 @@ html[data-theme="light"] .border-white\/\[0\.08\],
 html[data-theme="light"] .border-white\/10,
 html[data-theme="light"] .border-white\/12,
 html[data-theme="light"] .border-white\/15 {
-  border-color: rgba(0, 0, 0, 0.09) !important;
-}
-html[data-theme="light"] .divide-white\/\[0\.05\] > :not(:last-child),
-html[data-theme="light"] .divide-white\/\[0\.06\] > :not(:last-child) {
   border-color: rgba(0, 0, 0, 0.07) !important;
+}
+html[data-theme="light"] .divide-white\/\[0\.04\] > :not(:last-child),
+html[data-theme="light"] .divide-white\/\[0\.05\] > :not(:last-child),
+html[data-theme="light"] .divide-white\/\[0\.06\] > :not(:last-child),
+html[data-theme="light"] .divide-white\/\[0\.08\] > :not(:last-child) {
+  border-color: rgba(0, 0, 0, 0.06) !important;
 }
 html[data-theme="light"] .bg-white\/\[0\.02\],
 html[data-theme="light"] .bg-white\/\[0\.03\],
@@ -219,22 +313,22 @@ html[data-theme="light"] .bg-white\/\[0\.06\],
 html[data-theme="light"] .bg-white\/\[0\.07\],
 html[data-theme="light"] .bg-white\/\[0\.08\],
 html[data-theme="light"] .bg-white\/\[0\.1\] {
-  background-color: rgba(0, 0, 0, 0.045) !important;
+  background-color: rgba(0, 0, 0, 0.04) !important;
 }
 html[data-theme="light"] .bg-white\/\[0\.12\],
 html[data-theme="light"] .bg-white\/\[0\.14\],
 html[data-theme="light"] .bg-white\/10 {
-  background-color: rgba(0, 0, 0, 0.09) !important;
+  background-color: rgba(0, 0, 0, 0.08) !important;
 }
-/* Keep active solid white pills dark-on-light inverted cleanly */
 html[data-theme="light"] button.bg-white,
 html[data-theme="light"] a.bg-white {
   background-color: #1d1d1f !important;
   color: #ffffff !important;
   border-color: #1d1d1f !important;
 }
-html[data-theme="light"] .bg-\[\#10e760\] {
-  background-color: #16a34a !important;
+html[data-theme="light"] .bg-\[\#10e760\],
+html[data-theme="light"] .bg-\[\#30d158\] {
+  background-color: #248a3d !important;
   color: #ffffff !important;
 }
 html[data-theme="light"] .text-black {
@@ -245,7 +339,7 @@ html[data-theme="light"] .bg-white.text-black {
   color: #ffffff !important;
 }
 
-/* In Dark mode, remove the square container box and screen-blend the black PNG background so only the logo artwork shows cleanly; in Light mode, keep a pure black box for contrast. */
+/* Brand mark blending */
 .brand-icon-box {
   background-color: transparent !important;
   border: none !important;
@@ -256,22 +350,21 @@ html[data-theme="light"] .bg-white.text-black {
 }
 html[data-theme="light"] .brand-icon-box {
   background-color: #000000 !important;
-  border: 1px solid rgba(0, 0, 0, 0.14) !important;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
 }
 html[data-theme="light"] .brand-icon-box img {
   mix-blend-mode: normal;
 }
 
-/* Pure iOS Switch */
+/* Native iOS Toggle Switch */
 .ios-switch {
   position: relative;
   display: inline-flex;
   align-items: center;
-  width: 48px;
+  width: 46px;
   height: 28px;
   border-radius: 9999px;
-  background: #27272a;
+  background: #39393d;
   transition: background-color 0.2s ease;
   cursor: pointer;
   flex-shrink: 0;
@@ -279,7 +372,7 @@ html[data-theme="light"] .brand-icon-box img {
   padding: 2px;
 }
 html[data-theme="light"] .ios-switch {
-  background: #d1d1d6;
+  background: #e9e9eb;
 }
 .ios-switch[data-checked="true"] {
   background: var(--accent);
@@ -290,10 +383,10 @@ html[data-theme="light"] .ios-switch {
   border-radius: 9999px;
   background: #ffffff;
   transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
 }
 .ios-switch[data-checked="true"] .ios-switch-thumb {
-  transform: translateX(20px);
+  transform: translateX(18px);
 }
 
 input[type="number"]::-webkit-inner-spin-button,

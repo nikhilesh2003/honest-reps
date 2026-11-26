@@ -18,22 +18,18 @@ export function ScoreReasonSheet({ reason, onClose }: ScoreReasonSheetProps) {
     >
       {reason && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
+          <div className="flex items-center justify-between p-4 rounded-2xl bg-[#1c1c1e] border border-white/[0.05]">
             <div>
-              <div className="text-[11px] uppercase tracking-[0.06em] text-[#86868b] font-semibold">
-                Reason Behind Score
-              </div>
-              <div
-                className={`text-[13px] font-medium mt-0.5 ${
-                  reason.isEstimated ? "text-amber-400" : "text-[#10e760]"
-                }`}
-              >
+              <div className="text-[12px] text-[#86868b] font-medium">
                 {reason.badgeText}
+              </div>
+              <div className="text-[11px] text-[#636366] mt-0.5">
+                Relative to personal baseline
               </div>
             </div>
             <div
-              className={`text-[26px] font-bold tabular-nums leading-none ${
-                reason.isEstimated ? "text-amber-400" : "text-[#10e760]"
+              className={`text-[28px] font-semibold tracking-[-0.03em] tabular-nums leading-none ${
+                reason.isEstimated ? "text-amber-400" : "text-[#30d158]"
               }`}
             >
               {reason.scoreLabel}
@@ -41,21 +37,21 @@ export function ScoreReasonSheet({ reason, onClose }: ScoreReasonSheetProps) {
           </div>
 
           {reason.items.length > 0 && (
-            <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.06] space-y-2.5">
+            <div className="rounded-2xl bg-[#1c1c1e] border border-white/[0.05] divide-y divide-white/[0.06]">
               {reason.items.map((item, idx) => (
                 <div
                   key={`${item.label}-${idx}`}
-                  className="flex items-start justify-between gap-3 text-[12px]"
+                  className="px-4 py-3 flex items-start justify-between gap-3 text-[13px]"
                 >
                   <div className="min-w-0">
                     <div className="text-white font-medium">{item.label}</div>
-                    <div className="text-[#86868b] text-[11px] mt-0.5 leading-snug">
+                    <div className="text-[#86868b] text-[12px] mt-0.5 leading-snug">
                       {item.detail}
                     </div>
                   </div>
                   <span
                     className={`shrink-0 font-semibold tabular-nums ${
-                      reason.isEstimated ? "text-amber-400" : "text-[#10e760]"
+                      reason.isEstimated ? "text-amber-400" : "text-[#30d158]"
                     }`}
                   >
                     {item.points}
@@ -65,9 +61,9 @@ export function ScoreReasonSheet({ reason, onClose }: ScoreReasonSheetProps) {
             </div>
           )}
 
-          <div className="px-3.5 py-2.5 rounded-xl bg-white/[0.02] border border-white/[0.05] text-[11px] text-[#86868b] leading-snug tabular-nums">
+          <p className="px-1 text-[11px] text-[#86868b] leading-relaxed tabular-nums">
             {reason.formulaNote}
-          </div>
+          </p>
         </div>
       )}
     </BottomSheet>

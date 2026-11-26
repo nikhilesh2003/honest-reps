@@ -2,13 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  MapPin,
   Navigation,
   Trash2,
   CheckCircle2,
   AlertCircle,
   Users,
-  Globe,
 } from "lucide-react";
 import {
   clearGymLocation,
@@ -19,7 +17,6 @@ import {
   joinPublicGym,
   PublicGym,
   registerOrUpdatePublicGym,
-  saveGymLocation,
   setGymGeoSuppressed,
 } from "@/lib/gym-location";
 import { BottomSheet } from "../ui/BottomSheet";
@@ -104,7 +101,6 @@ export function GymLocationSheet({
         setLocating(false);
         triggerHaptic("success");
 
-        // If standing inside an existing public gym, suggest its name
         const nearby = findNearbyPublicGyms(c.lat, c.lng, 150);
         if (nearby.length > 0 && nearby[0].isInside) {
           setName(nearby[0].gym.name);
@@ -116,13 +112,11 @@ export function GymLocationSheet({
         setLocating(false);
         triggerHaptic("warning");
         if (err.code === err.PERMISSION_DENIED) {
-          setError(
-            "Location permission denied. Allow location access in your browser/device settings."
-          );
+          setError("Location permission denied. Allow access in browser settings.");
         } else if (err.code === err.TIMEOUT) {
           setError("Location timed out. Turn on GPS and try again.");
         } else {
-          setError("Unable to read your location. Make sure device location is turned on.");
+          setError("Unable to read your location.");
         }
       },
       { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
@@ -140,7 +134,7 @@ export function GymLocationSheet({
       setRadius(res.gym.radiusMeters);
       onUpdated(
         res.config,
-        `Joined ${res.gym.name}! ${res.gym.memberCount} members train here.`
+        `Joined ${res.gym.name} · ${res.gym.memberCount} members`
       );
       onClose();
     }
@@ -148,7 +142,7 @@ export function GymLocationSheet({
 
   const handleSave = () => {
     if (!coords) {
-      setError("Capture your gym location first using the button above.");
+      setError("Pin your current location first.");
       return;
     }
     triggerHaptic("success");
@@ -172,8 +166,8 @@ export function GymLocationSheet({
     onUpdated(
       next,
       enabled
-        ? `Gym published (${gym.name}) · Auto-check-in ON for all members`
-        : `Gym saved (${gym.name}) · Auto-check-in paused`
+        ? `Saved ${gym.name} · Auto-check-in ON`
+        : `Saved ${gym.name} · Auto-check-in paused`
     );
     onClose();
   };
@@ -191,38 +185,29 @@ export function GymLocationSheet({
       open={open}
       onClose={onClose}
       title="Gym Location"
-      subtitle="Save your gym or join a public gym for instant auto-check-in."
+      subtitle="Pin your gym or join a nearby gym for automatic check-in."
     >
       <div className="space-y-4">
-        {/* GPS Capture Card */}
-        <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] space-y-3">
-          <div className="flex items-start gap-2.5 text-[12px] text-[#86868b] leading-snug">
-            <MapPin className="w-4 h-4 text-[#10e760] shrink-0 mt-0.5" />
-            <span>
-              Stand at your gym and tap below to pin its GPS coordinates. When you set a gym, it is
-              shared with everyone who trains at this spot.
-            </span>
-          </div>
-
+        <div className="p-3.5 rounded-2xl bg-[#1c1c1e] space-y-3">
           <button
             type="button"
             disabled={locating}
             onClick={handleCaptureCurrentLocation}
-            className="w-full h-11 rounded-xl bg-[#10e760]/15 hover:bg-[#10e760]/25 border border-[#10e760]/40 text-[#10e760] text-[13px] font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
+            className="w-full h-11 rounded-full bg-[#30d158]/15 hover:bg-[#30d158]/25 text-[#30d158] text-[13px] font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
           >
             <Navigation className="w-4 h-4" />
             {locating
-              ? "Getting GPS coordinates..."
+              ? "Locating..."
               : coords
-              ? "Update to Current Location"
-              : "Use My Current Location"}
+              ? "Update Current Location"
+              : "Use Current Location"}
           </button>
 
           {coords && (
-            <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-black/60 border border-white/[0.07] text-[12px]">
-              <span className="flex items-center gap-1.5 text-[#10e760] font-medium">
+            <div className="flex items-center justify-between px-1 text-[12px]">
+              <span className="flex items-center gap-1.5 text-[#30d158] font-medium">
                 <CheckCircle2 className="w-3.5 h-3.5" />
-                Location pinned
+                Pinned
               </span>
               <span className="text-[#86868b] tabular-nums">
                 {coords.lat.toFixed(4)}, {coords.lng.toFixed(4)}
@@ -232,38 +217,29 @@ export function GymLocationSheet({
           )}
         </div>
 
-        {/* Nearby Public Gyms Auto-Discovered */}
+        {/* Nearby Public Gyms */}
         {nearbyPublicGyms.length > 0 && (
           <div className="space-y-2">
-            <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
-              <span className="flex items-center gap-1 text-[#10e760]">
-                <Globe className="w-3.5 h-3.5" />
-                Nearby Public Gyms
-              </span>
+            <div className="flex items-center justify-between text-[12px] text-[#86868b] px-0.5">
+              <span>Nearby Gyms</span>
               <span>{nearbyPublicGyms.length} found</span>
             </div>
-            <div className="space-y-1.5">
+            <div className="rounded-2xl bg-[#1c1c1e] divide-y divide-white/[0.06] overflow-hidden">
               {nearbyPublicGyms.map(({ gym: g, distanceMeters, isInside }) => {
                 const isCurrent = gymId === g.id;
                 return (
                   <div
                     key={g.id}
-                    className={`p-3 rounded-2xl border transition-colors flex items-center justify-between gap-3 ${
-                      isCurrent
-                        ? "bg-[#10e760]/10 border-[#10e760]/40"
-                        : isInside
-                        ? "bg-white/[0.05] border-[#10e760]/30"
-                        : "bg-white/[0.02] border-white/[0.07]"
-                    }`}
+                    className="px-4 py-3 flex items-center justify-between gap-3"
                   >
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-[13px] font-semibold text-white truncate">
+                        <span className="text-[14px] font-medium text-white truncate">
                           {g.name}
                         </span>
                         {isInside && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#10e760]/20 text-[#10e760] font-medium">
-                            You are here
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#30d158]/15 text-[#30d158] font-medium">
+                            Here
                           </span>
                         )}
                       </div>
@@ -273,17 +249,16 @@ export function GymLocationSheet({
                       </div>
                     </div>
                     {isCurrent ? (
-                      <span className="text-[12px] font-semibold text-[#10e760] flex items-center gap-1 shrink-0">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span className="text-[12px] font-medium text-[#30d158] shrink-0">
                         Joined
                       </span>
                     ) : (
                       <button
                         type="button"
                         onClick={() => handleJoinNearby(g)}
-                        className="px-3 py-1.5 rounded-xl bg-white text-black hover:bg-white/90 text-[12px] font-semibold shrink-0 cursor-pointer"
+                        className="px-3 py-1.5 rounded-full bg-white text-black text-[12px] font-semibold shrink-0 cursor-pointer"
                       >
-                        Join Gym
+                        Join
                       </button>
                     )}
                   </div>
@@ -293,86 +268,72 @@ export function GymLocationSheet({
           </div>
         )}
 
-        {/* Current Gym Member Badge */}
         {currentJoinedGym && (
-          <div className="p-3 rounded-2xl bg-white/[0.03] border border-white/[0.07] flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-[#10e760]/15 border border-[#10e760]/30 flex items-center justify-center shrink-0">
-                <Users className="w-4 h-4 text-[#10e760]" />
-              </div>
-              <div>
-                <div className="text-[13px] font-semibold text-white">
-                  Member of {currentJoinedGym.name}
-                </div>
-                <div className="text-[11px] text-[#86868b]">
-                  {currentJoinedGym.memberCount}{" "}
-                  {currentJoinedGym.memberCount === 1 ? "member trains" : "members train"} here
-                </div>
-              </div>
+          <div className="px-4 py-3 rounded-2xl bg-[#1c1c1e] flex items-center gap-3">
+            <Users className="w-4 h-4 text-[#30d158] shrink-0" />
+            <div className="text-[13px] text-white">
+              Member of <span className="font-semibold">{currentJoinedGym.name}</span>{" "}
+              <span className="text-[#86868b]">({currentJoinedGym.memberCount})</span>
             </div>
           </div>
         )}
 
-        <div>
-          <label className="block text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b] mb-1.5">
-            Gym Name
-          </label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Gold's Gym"
-            className="w-full h-11 px-3.5 rounded-xl bg-black border border-white/12 text-white text-[14px] focus:outline-none focus:border-[#10e760]"
-          />
-        </div>
-
-        <div>
-          <label className="block text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b] mb-1.5">
-            Detection Radius
-          </label>
-          <div className="grid grid-cols-4 gap-2">
-            {[100, 150, 250, 500].map((r) => (
-              <button
-                key={r}
-                type="button"
-                onClick={() => {
-                  triggerHaptic("selection");
-                  setRadius(r);
-                }}
-                className={`h-9 rounded-xl text-[12px] font-semibold tabular-nums border transition-colors cursor-pointer ${
-                  radius === r
-                    ? "bg-white text-black border-white"
-                    : "bg-white/[0.03] text-[#86868b] border-white/[0.08] hover:text-white"
-                }`}
-              >
-                {r}m
-              </button>
-            ))}
+        {/* Inset Grouped Settings */}
+        <div className="rounded-2xl bg-[#1c1c1e] divide-y divide-white/[0.06] overflow-hidden">
+          <div className="px-4 h-12 flex items-center justify-between gap-3">
+            <label className="text-[14px] text-[#86868b] shrink-0">Gym Name</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="My Gym"
+              className="flex-1 bg-transparent text-right text-[14px] font-medium text-white placeholder:text-[#636366] focus:outline-none"
+            />
           </div>
-        </div>
 
-        <div className="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.07]">
-          <div>
-            <div className="text-[14px] font-medium text-white">Auto-activate at gym</div>
-            <div className="text-[11px] text-[#86868b]">
-              Turns In the Gym ON while using the app at this spot
+          <div className="px-4 py-3 space-y-2">
+            <div className="text-[13px] text-[#86868b]">Detection Radius</div>
+            <div className="apple-segmented !bg-black/40">
+              {[100, 150, 250, 500].map((r) => (
+                <button
+                  key={r}
+                  type="button"
+                  data-active={radius === r}
+                  onClick={() => {
+                    triggerHaptic("selection");
+                    setRadius(r);
+                  }}
+                  className="apple-segmented-btn h-8 tabular-nums"
+                >
+                  {r}m
+                </button>
+              ))}
             </div>
           </div>
-          <button
-            type="button"
-            data-checked={enabled}
-            onClick={() => {
-              triggerHaptic("selection");
-              setEnabled((v) => !v);
-            }}
-            className="ios-switch"
-          >
-            <span className="ios-switch-thumb" />
-          </button>
+
+          <div className="px-4 py-3 flex items-center justify-between gap-3">
+            <div>
+              <div className="text-[14px] font-medium text-white">Auto-Check-In</div>
+              <div className="text-[11px] text-[#86868b]">
+                Turns In the Gym on at this spot
+              </div>
+            </div>
+            <button
+              type="button"
+              data-checked={enabled}
+              onClick={() => {
+                triggerHaptic("selection");
+                setEnabled((v) => !v);
+              }}
+              className="ios-switch"
+            >
+              <span className="ios-switch-thumb" />
+            </button>
+          </div>
         </div>
 
         {error && (
-          <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-[12px] text-amber-300">
+          <div className="flex items-start gap-2 px-3.5 py-2.5 rounded-xl bg-amber-500/10 text-[12px] text-amber-300">
             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
             <span>{error}</span>
           </div>
@@ -383,18 +344,18 @@ export function GymLocationSheet({
             <button
               type="button"
               onClick={handleClear}
-              className="h-12 px-4 rounded-2xl bg-white/[0.05] hover:bg-red-500/20 border border-white/[0.08] text-[#86868b] hover:text-red-300 text-[13px] font-medium flex items-center justify-center gap-1.5 cursor-pointer"
+              className="h-12 px-4 rounded-full bg-[#1c1c1e] hover:bg-red-500/20 text-[#86868b] hover:text-red-300 text-[13px] font-medium flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <Trash2 className="w-4 h-4" />
-              Clear
+              Remove
             </button>
           )}
           <button
             type="button"
             onClick={handleSave}
-            className="flex-1 h-12 rounded-2xl bg-[#10e760] hover:bg-[#25d658] text-black font-semibold text-[15px] cursor-pointer"
+            className="flex-1 h-12 rounded-full bg-[#30d158] hover:opacity-90 text-black font-semibold text-[15px] transition-opacity cursor-pointer"
           >
-            Save & Publish Gym
+            Save Gym
           </button>
         </div>
       </div>

@@ -1,7 +1,18 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Plus, Minus, Trash2, Clock, Calendar, Check, Search, RotateCcw } from "lucide-react";
+import {
+  Plus,
+  Minus,
+  Trash2,
+  Clock,
+  Calendar,
+  Check,
+  Search,
+  RotateCcw,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import { BottomSheet } from "../ui/BottomSheet";
 import { triggerHaptic } from "@/lib/haptics";
 import { AppStatePayload } from "@/lib/client-types";
@@ -66,16 +77,16 @@ export function LogStrengthSheet({
   const [selectedGroup, setSelectedGroup] = useState("Chest");
   const [sets, setSets] = useState<DraftSetRow[]>([{ weight: "80", reps: "10" }]);
   const [optionalMinutes, setOptionalMinutes] = useState("");
-  const [showMinutes, setShowMinutes] = useState(false);
   const [rir, setRir] = useState<number | null>(null);
+  const [showOptions, setShowOptions] = useState(false);
   const [dateOffset, setDateOffset] = useState(0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasRestoredDraft, setHasRestoredDraft] = useState(false);
 
+  const [pickerExpanded, setPickerExpanded] = useState(false);
   const [activeGroupFilter, setActiveGroupFilter] = useState<string>("All");
   const [exerciseSearch, setExerciseSearch] = useState("");
-  const [changingEditExercise, setChangingEditExercise] = useState(false);
   const [customExercises, setCustomExercises] = useState<ExerciseLibraryItem[]>([]);
   const [showAddExercise, setShowAddExercise] = useState(false);
   const [newExName, setNewExName] = useState("");
@@ -172,7 +183,6 @@ export function LogStrengthSheet({
     setNewExName("");
     setNewExError(null);
     setExerciseSearch("");
-    setChangingEditExercise(false);
     setHasRestoredDraft(false);
     const unit = state.profile.weightUnit;
 
@@ -183,6 +193,7 @@ export function LogStrengthSheet({
       setSelectedExercise(editingLog.exerciseName);
       setSelectedGroup(editingLog.muscleGroup);
       setActiveGroupFilter(editingLog.muscleGroup);
+      setPickerExpanded(false);
       setSets(
         editingLog.sets.map((s) => ({
           weight: String(
@@ -193,14 +204,11 @@ export function LogStrengthSheet({
           restSeconds: s.restSeconds,
         }))
       );
-      if (editingLog.optionalMinutes) {
-        setOptionalMinutes(String(editingLog.optionalMinutes));
-        setShowMinutes(true);
-      } else {
-        setOptionalMinutes("");
-        setShowMinutes(false);
-      }
-      setRir(typeof editingLog.rir === "number" ? editingLog.rir : null);
+      const hasMin = Boolean(editingLog.optionalMinutes);
+      const hasRir = typeof editingLog.rir === "number";
+      setOptionalMinutes(hasMin ? String(editingLog.optionalMinutes) : "");
+      setRir(hasRir ? editingLog.rir! : null);
+      setShowOptions(hasMin || hasRir);
       return;
     }
 
@@ -229,7 +237,8 @@ export function LogStrengthSheet({
             setSets(parsed.sets);
             setRir(parsed.rir ?? null);
             setOptionalMinutes(parsed.optionalMinutes || "");
-            setShowMinutes(Boolean(parsed.optionalMinutes));
+            setShowOptions(Boolean(parsed.optionalMinutes) || parsed.rir !== null);
+            setPickerExpanded(false);
             setHasRestoredDraft(true);
             return;
           }
@@ -240,8 +249,8 @@ export function LogStrengthSheet({
     }
 
     setOptionalMinutes("");
-    setShowMinutes(false);
     setRir(null);
+    setShowOptions(false);
 
     let defaultFilter = "All";
     let defaultEx: ExerciseLibraryItem | undefined = undefined;
@@ -280,6 +289,10 @@ export function LogStrengthSheet({
 
     if (defaultEx) {
       pickExercise(defaultEx.name, defaultEx.muscleGroup);
+      // Expand exercise picker when opened via generic "Log Strength" button; collapse when preselected from Quick Log / Lineup
+      setPickerExpanded(!initialExerciseName);
+    } else {
+      setPickerExpanded(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, initialBackfill, initialExerciseName, editingLog]);
@@ -418,6 +431,7 @@ export function LogStrengthSheet({
       pickExercise(trimmed, group);
       setNewExName("");
       setShowAddExercise(false);
+      setPickerExpanded(false);
       onExerciseAdded?.(trimmed);
     } catch {
       setNewExError("Failed to add exercise.");
@@ -497,11 +511,11 @@ export function LogStrengthSheet({
   const unit = state.profile.weightUnit;
   const weightStep = unit === "lb" ? 5 : 2.5;
   const loadMode = getExerciseLoadMode(selectedExercise);
-  const weightLabel =
+  const weightColHeader =
     loadMode === "assisted"
-      ? `Assisted (${unit})`
+      ? `Assist (${unit})`
       : loadMode === "bodyweight"
-      ? `Extra (${unit}, opt.)`
+      ? `Extra (${unit})`
       : `Weight (${unit})`;
 
   const lastSessionHint = useMemo(
@@ -531,7 +545,9 @@ export function LogStrengthSheet({
     }),
   ];
 
-  const showExercisePicker = !editingLog || changingEditExercise;
+  const optionsSummaryParts: string[] = [];
+  if (rir !== null) optionsSummaryParts.push(`RIR ${rir === 4 ? "4+" : rir}`);
+  if (optionalMinutes) optionsSummaryParts.push(`${optionalMinutes}m`);
 
   return (
     <BottomSheet
@@ -548,29 +564,24 @@ export function LogStrengthSheet({
         editingLog
           ? editingLog.date
           : dateOffset < 0
-          ? 'Saved with "Added later" label'
+          ? 'Saved with "Added later"'
           : loadMode === "assisted"
-          ? "Strength = Bodyweight − Assisted"
+          ? "Strength = Bodyweight − Assist"
           : loadMode === "bodyweight"
           ? "Uses bodyweight · extra weight optional"
-          : sessionGroups.length > 0
-          ? sessionGroups.join(" · ")
-          : "Tap ✓ on sets to start rest timer"
+          : undefined
       }
     >
       <div className="space-y-4">
-        {/* Date Selector */}
-        <div className="flex items-center gap-1.5 bg-white/[0.04] p-1 rounded-xl">
+        {/* Native iOS Segmented Date Picker */}
+        <div className="apple-segmented">
           {dateOptions.map((opt) => (
             <button
               key={opt.offset}
               type="button"
+              data-active={dateOffset === opt.offset}
               onClick={() => setDateOffset(opt.offset)}
-              className={`flex-1 h-8 rounded-lg text-[12px] font-medium flex items-center justify-center gap-1 transition-colors cursor-pointer ${
-                dateOffset === opt.offset
-                  ? "bg-white/[0.14] text-white"
-                  : "text-[#86868b] hover:text-white"
-              }`}
+              className="apple-segmented-btn h-8"
             >
               {opt.offset < 0 && <Calendar className="w-3 h-3" />}
               {opt.label}
@@ -579,9 +590,9 @@ export function LogStrengthSheet({
         </div>
 
         {hasRestoredDraft && !editingLog && (
-          <div className="px-3 py-2 rounded-xl bg-[#10e760]/10 border border-[#10e760]/30 flex items-center justify-between gap-2 text-[11px]">
-            <span className="text-[#10e760] font-medium">
-              Resumed unsaved workout draft for {selectedExercise}
+          <div className="px-3.5 py-2 rounded-xl bg-[#1c1c1e] flex items-center justify-between gap-2 text-[12px]">
+            <span className="text-[#30d158] font-medium truncate">
+              Resumed draft · {selectedExercise}
             </span>
             <button
               type="button"
@@ -594,46 +605,34 @@ export function LogStrengthSheet({
           </div>
         )}
 
-        {/* Muscle Group Pills & Exercise Picker */}
-        {!showExercisePicker ? (
-          <div className="px-3.5 py-2.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] flex items-center justify-between gap-2">
-            <div>
-              <div className="text-[14px] font-semibold text-white">{selectedExercise}</div>
-              <div className="text-[11px] text-[#86868b]">{selectedGroup}</div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setChangingEditExercise(true)}
-              className="px-2.5 py-1 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] text-[11px] font-medium text-[#10e760] cursor-pointer"
-            >
-              Change
-            </button>
-          </div>
-        ) : (
-          <>
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
-                  Muscle Groups
-                </span>
-                {activeGroupFilter !== "All" && (
-                  <button
-                    type="button"
-                    onClick={() => setActiveGroupFilter("All")}
-                    className="text-[11px] text-[#86868b] hover:text-white cursor-pointer"
-                  >
-                    Show all
-                  </button>
-                )}
+        {/* Compact Selected Exercise Header + Expandable Picker */}
+        {selectedExercise && !pickerExpanded ? (
+          <button
+            type="button"
+            onClick={() => setPickerExpanded(true)}
+            className="w-full px-4 py-3 rounded-2xl bg-[#1c1c1e] hover:bg-white/[0.08] flex items-center justify-between gap-3 text-left transition-colors cursor-pointer"
+          >
+            <div className="min-w-0">
+              <div className="text-[16px] font-semibold text-white truncate">
+                {selectedExercise}
               </div>
-              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+              <div className="text-[12px] text-[#86868b]">{selectedGroup}</div>
+            </div>
+            <span className="text-[13px] font-medium text-[#30d158] shrink-0">
+              Change
+            </span>
+          </button>
+        ) : (
+          <div className="p-3.5 rounded-2xl bg-[#1c1c1e] space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 flex-1">
                 <button
                   type="button"
                   onClick={() => setActiveGroupFilter("All")}
-                  className={`px-3 py-1.5 rounded-full text-[12px] font-semibold shrink-0 transition-colors cursor-pointer border ${
+                  className={`px-2.5 py-1 rounded-full text-[12px] font-medium shrink-0 transition-colors cursor-pointer ${
                     activeGroupFilter === "All"
-                      ? "bg-white text-black border-white"
-                      : "bg-white/[0.04] text-[#86868b] border-white/[0.08] hover:text-white"
+                      ? "bg-white text-black font-semibold"
+                      : "bg-white/[0.06] text-[#86868b] hover:text-white"
                   }`}
                 >
                   All
@@ -654,102 +653,93 @@ export function LogStrengthSheet({
                         setActiveGroupFilter(mg.name);
                         setNewExGroup(mg.name);
                       }}
-                      className={`px-3 py-1.5 rounded-full text-[12px] font-semibold shrink-0 transition-colors cursor-pointer border flex items-center gap-1.5 ${
+                      className={`px-2.5 py-1 rounded-full text-[12px] font-medium shrink-0 transition-colors cursor-pointer flex items-center gap-1.5 ${
                         active
-                          ? "bg-[#10e760] text-black border-[#10e760]"
+                          ? "bg-[#30d158] text-black font-semibold"
                           : isSessionTarget
-                          ? "bg-[#10e760]/12 text-[#10e760] border-[#10e760]/30 hover:border-[#10e760]/60"
-                          : "bg-white/[0.04] text-[#86868b] border-white/[0.08] hover:text-white"
+                          ? "bg-[#30d158]/15 text-[#30d158]"
+                          : "bg-white/[0.06] text-[#86868b] hover:text-white"
                       }`}
                     >
                       {isSessionTarget && !active && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#10e760] shrink-0" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#30d158] shrink-0" />
                       )}
                       <span>{mg.name}</span>
                     </button>
                   );
                 })}
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
-                  Exercises {activeGroupFilter !== "All" ? `· ${activeGroupFilter}` : ""}
-                </span>
+              {selectedExercise && (
                 <button
                   type="button"
-                  onClick={() => {
-                    setNewExGroup(
-                      activeGroupFilter !== "All"
-                        ? activeGroupFilter
-                        : strengthMuscleGroups[0]?.name || "Chest"
-                    );
-                    setShowAddExercise((prev) => !prev);
-                    setNewExError(null);
-                  }}
-                  className="text-[12px] font-semibold text-[#10e760] hover:underline flex items-center gap-1 cursor-pointer"
+                  onClick={() => setPickerExpanded(false)}
+                  className="text-[12px] font-medium text-[#86868b] hover:text-white shrink-0 pl-1 cursor-pointer"
                 >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Add to library</span>
+                  Done
                 </button>
-              </div>
+              )}
+            </div>
 
-              {/* Instant Exercise Search */}
-              <div className="relative flex items-center">
+            {/* Search + Custom Exercise Trigger */}
+            <div className="flex items-center gap-2">
+              <div className="relative flex items-center flex-1">
                 <Search className="w-3.5 h-3.5 text-[#86868b] absolute left-3 pointer-events-none" />
                 <input
                   type="text"
                   value={exerciseSearch}
                   onChange={(e) => setExerciseSearch(e.target.value)}
-                  placeholder="Filter exercises..."
-                  className="w-full h-9 pl-8.5 pr-3 rounded-xl bg-black border border-white/10 text-white text-[13px] placeholder:text-[#525257] focus:outline-none focus:border-[#10e760]"
+                  placeholder="Search exercises..."
+                  className="w-full h-9 pl-8.5 pr-3 rounded-xl bg-black/50 text-white text-[13px] placeholder:text-[#636366] focus:outline-none"
                 />
               </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setNewExGroup(
+                    activeGroupFilter !== "All"
+                      ? activeGroupFilter
+                      : strengthMuscleGroups[0]?.name || "Chest"
+                  );
+                  if (exerciseSearch.trim() && filteredExercises.length === 0) {
+                    setNewExName(exerciseSearch.trim());
+                  }
+                  setShowAddExercise((prev) => !prev);
+                  setNewExError(null);
+                }}
+                className="h-9 px-3 rounded-xl bg-white/[0.07] hover:bg-white/[0.12] text-[12px] font-medium text-[#30d158] flex items-center gap-1 shrink-0 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Custom
+              </button>
+            </div>
 
-              {/* Inline Add New Exercise Form */}
-              {showAddExercise && (
-                <div className="p-3.5 rounded-2xl bg-[#10e760]/[0.06] border border-[#10e760]/30 space-y-2.5 animate-in fade-in duration-200">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[12px] font-semibold text-white flex items-center gap-1.5">
-                      <Plus className="w-3.5 h-3.5 text-[#10e760]" />
-                      New Workout &rarr; Personal Library
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowAddExercise(false);
-                        setNewExError(null);
-                      }}
-                      className="text-[#86868b] hover:text-white text-[12px] cursor-pointer"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <input
-                      type="text"
-                      value={newExName}
-                      onChange={(e) => {
-                        setNewExName(e.target.value);
-                        setNewExError(null);
-                      }}
-                      placeholder="e.g. Incline DB Curl, Face Pull"
-                      className="flex-1 h-10 px-3 rounded-xl bg-black border border-white/12 text-white text-[13px] placeholder:text-[#6e6e73] focus:outline-none focus:border-[#10e760]"
-                      autoFocus
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          handleCreateExercise();
-                        }
-                      }}
-                    />
-
+            {/* Inline Custom Exercise Form */}
+            {showAddExercise && (
+              <div className="p-3 rounded-xl bg-black/40 space-y-2">
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    type="text"
+                    value={newExName}
+                    onChange={(e) => {
+                      setNewExName(e.target.value);
+                      setNewExError(null);
+                    }}
+                    placeholder="Exercise name"
+                    className="flex-1 h-9 px-3 rounded-lg bg-[#1c1c1e] text-white text-[13px] placeholder:text-[#636366] focus:outline-none"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleCreateExercise();
+                      }
+                    }}
+                  />
+                  <div className="flex gap-2">
                     <select
                       value={newExGroup}
                       onChange={(e) => setNewExGroup(e.target.value)}
-                      className="h-10 px-3 rounded-xl bg-black border border-white/12 text-white text-[12px] focus:outline-none focus:border-[#10e760]"
+                      className="h-9 px-2.5 rounded-lg bg-[#1c1c1e] text-white text-[12px] focus:outline-none"
                     >
                       {strengthMuscleGroups.map((mg) => (
                         <option key={mg.id} value={mg.name}>
@@ -757,174 +747,132 @@ export function LogStrengthSheet({
                         </option>
                       ))}
                     </select>
-
                     <button
                       type="button"
                       disabled={addingEx || !newExName.trim()}
                       onClick={handleCreateExercise}
-                      className="h-10 px-4 rounded-xl bg-[#10e760] hover:bg-[#25d658] disabled:opacity-40 text-black font-semibold text-[13px] transition-colors flex items-center justify-center gap-1 cursor-pointer shrink-0"
+                      className="h-9 px-3.5 rounded-lg bg-[#30d158] disabled:opacity-40 text-black font-semibold text-[12px] cursor-pointer shrink-0"
                     >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>{addingEx ? "Saving..." : "Add"}</span>
+                      {addingEx ? "Saving..." : "Add"}
                     </button>
                   </div>
-
-                  {newExError && (
-                    <div className="text-[11px] text-amber-400">{newExError}</div>
-                  )}
                 </div>
-              )}
-
-              {/* Exercise Pills Wrap */}
-              <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto no-scrollbar">
-                {filteredExercises.map((ex) => {
-                  const active =
-                    selectedExercise.toLowerCase() === ex.name.toLowerCase();
-                  return (
-                    <button
-                      key={ex.id}
-                      type="button"
-                      onClick={() => {
-                        if (editingLog) {
-                          setSelectedExercise(ex.name);
-                          setSelectedGroup(ex.muscleGroup);
-                          setChangingEditExercise(false);
-                        } else {
-                          pickExercise(ex.name, ex.muscleGroup);
-                        }
-                      }}
-                      className={`px-3 py-1.5 rounded-full text-[13px] font-medium transition-colors cursor-pointer border ${
-                        active
-                          ? "bg-[#10e760] text-black border-[#10e760] font-semibold"
-                          : "bg-white/[0.04] text-[#f5f5f7] border-white/[0.08] hover:border-white/25"
-                      }`}
-                    >
-                      {ex.name}
-                    </button>
-                  );
-                })}
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setNewExGroup(
-                      activeGroupFilter !== "All"
-                        ? activeGroupFilter
-                        : strengthMuscleGroups[0]?.name || "Chest"
-                    );
-                    if (exerciseSearch.trim() && filteredExercises.length === 0) {
-                      setNewExName(exerciseSearch.trim());
-                    }
-                    setShowAddExercise(true);
-                    setNewExError(null);
-                  }}
-                  className="px-3 py-1.5 rounded-full text-[13px] font-medium text-[#10e760] bg-[#10e760]/10 border border-dashed border-[#10e760]/40 hover:bg-[#10e760]/20 flex items-center gap-1 cursor-pointer transition-colors"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Add new</span>
-                </button>
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* Last Session & Beat Usual (50) Reference Strip */}
-        {lastSessionHint && (
-          <div className="px-3.5 py-2.5 rounded-2xl bg-white/[0.03] border border-white/[0.07] flex items-center justify-between gap-2 text-[11px]">
-            <div className="min-w-0">
-              <div className="text-[#86868b]">
-                Last ({formatShortMonthDay(lastSessionHint.lastDate)})
-                {lastSessionHint.lastEffortScore !== null && (
-                  <span className="text-[#10e760] font-semibold ml-1.5 tabular-nums">
-                    Effort {lastSessionHint.lastEffortScore}
-                  </span>
+                {newExError && (
+                  <div className="text-[11px] text-amber-400">{newExError}</div>
                 )}
               </div>
-              <div className="text-white font-medium tabular-nums truncate mt-0.5">
-                {lastSessionHint.lastSetsSummary}
-              </div>
-            </div>
-            <div className="text-right shrink-0 text-[10px] px-2 py-1 rounded-lg bg-black/50 border border-white/[0.06] text-[#a1a1a6] tabular-nums">
-              {lastSessionHint.targetHint}
+            )}
+
+            {/* Exercise Pills */}
+            <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto no-scrollbar">
+              {filteredExercises.map((ex) => {
+                const active =
+                  selectedExercise.toLowerCase() === ex.name.toLowerCase();
+                return (
+                  <button
+                    key={ex.id}
+                    type="button"
+                    onClick={() => {
+                      if (editingLog) {
+                        setSelectedExercise(ex.name);
+                        setSelectedGroup(ex.muscleGroup);
+                      } else {
+                        pickExercise(ex.name, ex.muscleGroup);
+                      }
+                      setPickerExpanded(false);
+                    }}
+                    className={`px-3 py-1.5 rounded-full text-[13px] font-medium transition-colors cursor-pointer ${
+                      active
+                        ? "bg-[#30d158] text-black font-semibold"
+                        : "bg-white/[0.06] text-[#f5f5f7] hover:bg-white/[0.12]"
+                    }`}
+                  >
+                    {ex.name}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
 
-        {/* Set Rows with Check-Off (✓) & Tactile +/- Steppers */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
-              {sets.length === 1 ? "Quick Entry" : `Sets (${sets.length})`}
+        {/* Quiet Inline Last Session & Usual Hint */}
+        {lastSessionHint && (
+          <div className="flex items-center justify-between gap-2 px-1 text-[12px] text-[#86868b] tabular-nums">
+            <span className="truncate">
+              Last {formatShortMonthDay(lastSessionHint.lastDate)}:{" "}
+              <span className="text-[#d1d1d6]">{lastSessionHint.lastSetsSummary}</span>
             </span>
-            <button
-              type="button"
-              onClick={addSetRow}
-              className="text-[12px] font-medium text-[#10e760] hover:underline flex items-center gap-1 cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Add set
-            </button>
+            <span className="shrink-0 text-[11px] text-[#30d158]">
+              {lastSessionHint.targetHint}
+            </span>
+          </div>
+        )}
+
+        {/* Clean Tabular Sets Table */}
+        <div className="space-y-2">
+          <div className="grid grid-cols-[36px_1fr_1fr_28px] gap-2 px-1 text-[11px] font-medium text-[#86868b]">
+            <span className="text-center">Set</span>
+            <span className="text-center">{weightColHeader}</span>
+            <span className="text-center">Reps</span>
+            <span />
           </div>
 
-          {sets.map((s, idx) => {
-            const rawWeight = Number(s.weight) || 0;
-            const rawReps = Number(s.reps) || 0;
-            const weightKg = unit === "lb" ? rawWeight / 2.20462 : rawWeight;
-            const est1RMKg = estimateOneRepMax(weightKg, rawReps, selectedExercise);
-            const display1RM =
-              unit === "lb" ? Math.round(est1RMKg * 2.20462) : est1RMKg;
-            const prCheck = detectSetPersonalRecord(
-              selectedExercise,
-              { weightKg, reps: rawReps },
-              editingLog
-                ? state.recentExerciseLogs.filter((l) => l.id !== editingLog.id)
-                : state.recentExerciseLogs
-            );
+          <div className="space-y-2">
+            {sets.map((s, idx) => {
+              const rawWeight = Number(s.weight) || 0;
+              const rawReps = Number(s.reps) || 0;
+              const weightKg = unit === "lb" ? rawWeight / 2.20462 : rawWeight;
+              const est1RMKg = estimateOneRepMax(weightKg, rawReps, selectedExercise);
+              const display1RM =
+                unit === "lb" ? Math.round(est1RMKg * 2.20462) : est1RMKg;
+              const prCheck = detectSetPersonalRecord(
+                selectedExercise,
+                { weightKg, reps: rawReps },
+                editingLog
+                  ? state.recentExerciseLogs.filter((l) => l.id !== editingLog.id)
+                  : state.recentExerciseLogs
+              );
+              const isPr = prCheck.isWeightPr || prCheck.isOneRepMaxPr;
 
-            return (
-              <div
-                key={idx}
-                className={`p-3 rounded-2xl border transition-all ${
-                  s.completed
-                    ? "bg-[#10e760]/[0.06] border-[#10e760]/40"
-                    : "bg-white/[0.03] border-white/[0.07]"
-                }`}
-              >
-                <div className="grid grid-cols-[38px_1fr_1fr_auto] items-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => toggleSetCompleted(idx)}
-                    aria-label={
-                      s.completed
-                        ? `Unmark set ${idx + 1}`
-                        : `Complete set ${idx + 1} and start rest timer`
-                    }
-                    title="Tap to mark set complete & start Rest Timer"
-                    className={`w-9 h-10 rounded-xl flex items-center justify-center border transition-all cursor-pointer ${
-                      s.completed
-                        ? "bg-[#10e760] text-black border-[#10e760] shadow-[0_0_12px_rgba(16,231,96,0.35)]"
-                        : "bg-white/[0.04] text-[#86868b] border-white/10 hover:border-[#10e760]/50 hover:text-white"
-                    }`}
-                  >
-                    {s.completed ? (
-                      <Check className="w-4 h-4 stroke-[2.6]" />
-                    ) : (
-                      <span className="text-[12px] font-semibold tabular-nums">
-                        #{idx + 1}
-                      </span>
-                    )}
-                  </button>
+              return (
+                <div
+                  key={idx}
+                  className={`px-2.5 py-2 rounded-2xl transition-colors ${
+                    s.completed ? "bg-[#30d158]/[0.1]" : "bg-[#1c1c1e]"
+                  }`}
+                >
+                  <div className="grid grid-cols-[36px_1fr_1fr_28px] items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => toggleSetCompleted(idx)}
+                      aria-label={
+                        s.completed
+                          ? `Unmark set ${idx + 1}`
+                          : `Complete set ${idx + 1} and start rest timer`
+                      }
+                      title="Tap to mark complete & start Rest Timer"
+                      className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors cursor-pointer ${
+                        s.completed
+                          ? "bg-[#30d158] text-black"
+                          : "bg-white/[0.06] text-[#86868b] hover:text-white"
+                      }`}
+                    >
+                      {s.completed ? (
+                        <Check className="w-4 h-4 stroke-[2.6]" />
+                      ) : (
+                        <span className="text-[13px] font-semibold tabular-nums">
+                          {idx + 1}
+                        </span>
+                      )}
+                    </button>
 
-                  <div>
-                    <label className="block text-[10px] text-[#86868b] mb-0.5 truncate">
-                      {weightLabel}
-                    </label>
-                    <div className="flex items-center h-10 rounded-xl bg-black border border-white/12 focus-within:border-[#10e760] overflow-hidden">
+                    {/* Weight Stepper */}
+                    <div className="flex items-center h-9 rounded-xl bg-black/40 overflow-hidden">
                       <button
                         type="button"
                         onClick={() => stepSetValue(idx, "weight", -weightStep)}
                         aria-label="Decrease weight"
-                        className="w-7 h-full flex items-center justify-center text-[#86868b] hover:text-white hover:bg-white/[0.06] cursor-pointer shrink-0"
+                        className="w-7 h-full flex items-center justify-center text-[#86868b] hover:text-white cursor-pointer shrink-0"
                       >
                         <Minus className="w-3 h-3" />
                       </button>
@@ -935,29 +883,25 @@ export function LogStrengthSheet({
                         value={s.weight}
                         placeholder={loadMode === "bodyweight" ? "0" : undefined}
                         onChange={(e) => updateSet(idx, "weight", e.target.value)}
-                        className="w-full min-w-0 h-full px-1 bg-transparent text-center text-white text-[15px] font-semibold tabular-nums focus:outline-none"
+                        className="w-full min-w-0 h-full bg-transparent text-center text-white text-[15px] font-semibold tabular-nums focus:outline-none"
                       />
                       <button
                         type="button"
                         onClick={() => stepSetValue(idx, "weight", weightStep)}
                         aria-label="Increase weight"
-                        className="w-7 h-full flex items-center justify-center text-[#86868b] hover:text-[#10e760] hover:bg-white/[0.06] cursor-pointer shrink-0"
+                        className="w-7 h-full flex items-center justify-center text-[#86868b] hover:text-[#30d158] cursor-pointer shrink-0"
                       >
                         <Plus className="w-3 h-3" />
                       </button>
                     </div>
-                  </div>
 
-                  <div>
-                    <label className="block text-[10px] text-[#86868b] mb-0.5 truncate">
-                      {sets.length === 1 ? "Total reps" : "Reps"}
-                    </label>
-                    <div className="flex items-center h-10 rounded-xl bg-black border border-white/12 focus-within:border-[#10e760] overflow-hidden">
+                    {/* Reps Stepper */}
+                    <div className="flex items-center h-9 rounded-xl bg-black/40 overflow-hidden">
                       <button
                         type="button"
                         onClick={() => stepSetValue(idx, "reps", -1)}
                         aria-label="Decrease reps"
-                        className="w-7 h-full flex items-center justify-center text-[#86868b] hover:text-white hover:bg-white/[0.06] cursor-pointer shrink-0"
+                        className="w-7 h-full flex items-center justify-center text-[#86868b] hover:text-white cursor-pointer shrink-0"
                       >
                         <Minus className="w-3 h-3" />
                       </button>
@@ -966,94 +910,110 @@ export function LogStrengthSheet({
                         inputMode="numeric"
                         value={s.reps}
                         onChange={(e) => updateSet(idx, "reps", e.target.value)}
-                        className="w-full min-w-0 h-full px-1 bg-transparent text-center text-white text-[15px] font-semibold tabular-nums focus:outline-none"
+                        className="w-full min-w-0 h-full bg-transparent text-center text-white text-[15px] font-semibold tabular-nums focus:outline-none"
                       />
                       <button
                         type="button"
                         onClick={() => stepSetValue(idx, "reps", 1)}
                         aria-label="Increase reps"
-                        className="w-7 h-full flex items-center justify-center text-[#86868b] hover:text-[#10e760] hover:bg-white/[0.06] cursor-pointer shrink-0"
+                        className="w-7 h-full flex items-center justify-center text-[#86868b] hover:text-[#30d158] cursor-pointer shrink-0"
                       >
                         <Plus className="w-3 h-3" />
                       </button>
                     </div>
+
+                    {sets.length > 1 ? (
+                      <button
+                        type="button"
+                        onClick={() => removeSet(idx)}
+                        aria-label="Remove set"
+                        className="w-7 h-9 flex items-center justify-center text-[#636366] hover:text-red-400 cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    ) : (
+                      <div />
+                    )}
                   </div>
 
-                  {sets.length > 1 ? (
-                    <button
-                      type="button"
-                      onClick={() => removeSet(idx)}
-                      aria-label="Remove set"
-                      className="w-8 h-10 rounded-xl flex items-center justify-center text-[#86868b] hover:text-red-400 cursor-pointer"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  ) : (
-                    <div className="w-0.5" />
-                  )}
-                </div>
-
-                {/* Live Estimated 1RM & PR Record Badge */}
-                {display1RM > 0 && (
-                  <div className="mt-2 pt-2 border-t border-white/[0.05] flex items-center justify-between text-[11px]">
-                    <div className="text-[#86868b] flex items-center gap-1.5">
-                      <span>
-                        {loadMode === "assisted" ? "Est. 1RM Assist:" : "Est. 1RM:"}
+                  {display1RM > 0 && (
+                    <div className="mt-1.5 pl-11 pr-1 flex items-center justify-between text-[11px] tabular-nums">
+                      <span className="text-[#86868b]">
+                        1RM {display1RM} {unit}
                       </span>
-                      <span className="font-semibold text-white font-mono tabular-nums">
-                        {display1RM} {unit}
-                      </span>
-                    </div>
-
-                    {(prCheck.isWeightPr || prCheck.isOneRepMaxPr) && (
-                      <span className="px-2 py-0.5 rounded-full bg-amber-400/15 text-amber-300 border border-amber-400/30 text-[10px] font-bold tracking-wide flex items-center gap-1">
-                        <span>★ PR</span>
-                        <span className="font-normal opacity-85">
+                      {isPr && (
+                        <span className="px-2 py-0.5 rounded-full bg-amber-400/15 text-amber-300 text-[10px] font-semibold">
+                          PR ·{" "}
                           {prCheck.isWeightPr && prCheck.isOneRepMaxPr
-                            ? loadMode === "assisted"
-                              ? "Least Assist & 1RM"
-                              : "Weight & 1RM"
+                            ? "Weight & 1RM"
                             : prCheck.isWeightPr
                             ? loadMode === "assisted"
                               ? "Least Assist"
                               : "Max Weight"
                             : "1RM"}
                         </span>
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          <button
+            type="button"
+            onClick={addSetRow}
+            className="w-full h-9 rounded-xl bg-[#1c1c1e] hover:bg-white/[0.08] text-[13px] font-medium text-[#30d158] flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Add Set
+          </button>
         </div>
 
-        {/* Optional RIR */}
-        {(() => {
-          const rirOptions = [
-            { val: 0, title: "0", text: "0 · Muscular failure (couldn't do another rep)" },
-            { val: 1, title: "1", text: "1 · Very hard set (1 rep left)" },
-            { val: 2, title: "2", text: "2 · Hard working set (2 reps left)" },
-            { val: 3, title: "3", text: "3 · Moderate effort (3 reps left)" },
-            { val: 4, title: "4+", text: "4+ · Light / warm-up (4+ reps left)" },
-          ];
-          const selectedOpt = rirOptions.find((o) => o.val === rir);
-          return (
-            <div className="space-y-1.5">
+        {/* Progressive Disclosure: Optional RIR & Duration */}
+        <div className="rounded-2xl bg-[#1c1c1e] overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setShowOptions((v) => !v)}
+            className="w-full px-3.5 h-10 flex items-center justify-between text-[12px] text-[#86868b] hover:text-white transition-colors cursor-pointer"
+          >
+            <span>Options (RIR, Duration)</span>
+            <span className="flex items-center gap-1.5">
+              {optionsSummaryParts.length > 0 && (
+                <span className="text-[#30d158] font-medium tabular-nums">
+                  {optionsSummaryParts.join(" · ")}
+                </span>
+              )}
+              {showOptions ? (
+                <ChevronUp className="w-3.5 h-3.5" />
+              ) : (
+                <ChevronDown className="w-3.5 h-3.5" />
+              )}
+            </span>
+          </button>
+
+          {showOptions && (
+            <div className="px-3.5 pb-3 pt-2 border-t border-white/[0.06] space-y-3">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-[12px] text-[#86868b]">RIR (optional)</span>
+                <span className="text-[12px] text-[#86868b]">Reps in Reserve</span>
                 <div className="flex items-center gap-1">
-                  {rirOptions.map((opt) => {
+                  {[
+                    { val: 0, title: "0" },
+                    { val: 1, title: "1" },
+                    { val: 2, title: "2" },
+                    { val: 3, title: "3" },
+                    { val: 4, title: "4+" },
+                  ].map((opt) => {
                     const active = rir === opt.val;
                     return (
                       <button
                         key={opt.val}
                         type="button"
                         onClick={() => setRir(active ? null : opt.val)}
-                        className={`px-2.5 py-1 rounded-full text-[11px] font-semibold tabular-nums transition-colors cursor-pointer border ${
+                        className={`px-2.5 py-1 rounded-full text-[11px] font-semibold tabular-nums transition-colors cursor-pointer ${
                           active
-                            ? "bg-[#10e760] text-black border-[#10e760]"
-                            : "bg-white/[0.04] text-[#86868b] border-white/[0.08] hover:text-white"
+                            ? "bg-[#30d158] text-black"
+                            : "bg-black/40 text-[#86868b] hover:text-white"
                         }`}
                       >
                         {opt.title}
@@ -1062,39 +1022,27 @@ export function LogStrengthSheet({
                   })}
                 </div>
               </div>
-              {selectedOpt && (
-                <p className="text-[11px] text-[#86868b] text-right leading-snug">
-                  {selectedOpt.text}
-                </p>
-              )}
-            </div>
-          );
-        })()}
 
-        {/* Optional strength minutes */}
-        {!showMinutes ? (
-          <button
-            type="button"
-            onClick={() => setShowMinutes(true)}
-            className="text-[12px] text-[#86868b] hover:text-white flex items-center gap-1.5 cursor-pointer"
-          >
-            <Clock className="w-3.5 h-3.5" />
-            Add optional duration
-          </button>
-        ) : (
-          <div className="flex items-center gap-2 p-3 rounded-2xl bg-white/[0.03] border border-white/[0.07]">
-            <Clock className="w-4 h-4 text-[#86868b]" />
-            <input
-              type="number"
-              inputMode="numeric"
-              value={optionalMinutes}
-              onChange={(e) => setOptionalMinutes(e.target.value)}
-              placeholder="Minutes (optional)"
-              className="flex-1 bg-transparent text-white text-[14px] tabular-nums focus:outline-none"
-            />
-            <span className="text-[11px] text-[#86868b]">min</span>
-          </div>
-        )}
+              <div className="flex items-center justify-between gap-2 pt-1 border-t border-white/[0.05]">
+                <span className="text-[12px] text-[#86868b] flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5" />
+                  Duration
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    value={optionalMinutes}
+                    onChange={(e) => setOptionalMinutes(e.target.value)}
+                    placeholder="Optional"
+                    className="w-20 h-8 px-2.5 rounded-lg bg-black/40 text-right text-white text-[13px] tabular-nums focus:outline-none"
+                  />
+                  <span className="text-[12px] text-[#86868b]">min</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
 
         {error && <p className="text-[12px] text-amber-400">{error}</p>}
 
@@ -1102,9 +1050,9 @@ export function LogStrengthSheet({
           type="button"
           disabled={saving}
           onClick={handleSave}
-          className="w-full h-12 rounded-2xl bg-[#10e760] hover:bg-[#25d658] disabled:opacity-40 text-black font-semibold text-[15px] transition-colors cursor-pointer"
+          className="w-full h-12 rounded-full bg-[#30d158] hover:opacity-90 disabled:opacity-40 text-black font-semibold text-[15px] transition-opacity cursor-pointer"
         >
-          {saving ? "Saving..." : "Save"}
+          {saving ? "Saving..." : "Save Workout"}
         </button>
       </div>
     </BottomSheet>

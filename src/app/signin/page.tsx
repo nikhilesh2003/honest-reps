@@ -1,17 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Activity, Camera, ShieldCheck } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const PREVIEW_DAYS = [
-  { day: "M", score: 48, pct: 48, color: "var(--effort-very-low)", text: "text-[#bbf7d0]" },
-  { day: "T", score: 62, pct: 62, color: "var(--effort-low)", text: "text-black" },
-  { day: "W", score: null, pct: 0, color: "transparent", text: "text-[#525257]", rest: true },
-  { day: "T", score: 54, pct: 54, color: "var(--effort-low)", text: "text-black" },
-  { day: "F", score: 72, pct: 72, color: "var(--effort-steady)", text: "text-black" },
-  { day: "S", score: 81, pct: 81, color: "var(--effort-high)", text: "text-black" },
-  { day: "S", score: 88, pct: 88, color: "var(--effort-very-high)", text: "text-black", today: true },
+  { day: "M", score: 48, pct: 48, color: "var(--effort-very-low)" },
+  { day: "T", score: 62, pct: 62, color: "var(--effort-low)" },
+  { day: "W", score: null, pct: 0, color: "transparent", rest: true },
+  { day: "T", score: 54, pct: 54, color: "var(--effort-low)" },
+  { day: "F", score: 72, pct: 72, color: "var(--effort-steady)" },
+  { day: "S", score: 81, pct: 81, color: "var(--effort-high)" },
+  { day: "S", score: 88, pct: 88, color: "var(--effort-very-high)", today: true },
 ];
 
 // FR-1: Google sign-in ONLY. No passwords, no email/password fields, no default demo login.
@@ -55,36 +54,33 @@ export default function SignInPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center px-5 py-10 pt-safe pb-safe">
-      <div className="w-full max-w-sm space-y-6 text-center">
+    <div className="min-h-screen bg-black flex flex-col items-center justify-center px-6 py-12 pt-safe pb-safe">
+      <div className="w-full max-w-[360px] space-y-8 text-center">
+        {/* Hero */}
         <div className="space-y-3">
-          <div className="brand-icon-box w-20 h-20 mx-auto rounded-[22px] p-2.5 flex items-center justify-center">
+          <div className="brand-icon-box w-16 h-16 mx-auto rounded-[18px] p-2 flex items-center justify-center">
             <img
               src="/icons/logo-icon.png"
               alt="Honest Reps"
               className="w-full h-full object-contain"
             />
           </div>
-          <div className="brand-icon-box inline-flex px-4 py-1.5 rounded-2xl mx-auto">
-            <img
-              src="/icons/logo-wordmark.png"
-              alt="honestreps.com"
-              className="h-7 object-contain"
-            />
-          </div>
-          <p className="text-[14px] text-[#86868b] leading-relaxed max-w-[300px] mx-auto">
-            Strength and cardio effort scored strictly against your own history.{" "}
-            <span className="text-white font-medium">50 means your usual.</span>
+          <h1 className="text-[32px] font-semibold tracking-[-0.03em] text-white leading-tight">
+            Honest Reps
+          </h1>
+          <p className="text-[15px] text-[#86868b] leading-relaxed max-w-[290px] mx-auto">
+            Strength and cardio scored strictly against your own history.{" "}
+            <span className="text-white font-medium">50 is your usual.</span>
           </p>
         </div>
 
-        {/* Sign-in CTA Card */}
-        <div className="apple-card p-5 space-y-3">
+        {/* Direct Primary CTA */}
+        <div className="space-y-2.5">
           <button
             type="button"
             disabled={loading}
             onClick={handleGoogleSignIn}
-            className="w-full h-12 rounded-2xl bg-white hover:bg-[#f5f5f7] disabled:opacity-50 text-black font-semibold text-[15px] flex items-center justify-center gap-3 transition-colors cursor-pointer"
+            className="w-full h-12 rounded-full bg-white hover:opacity-90 disabled:opacity-50 text-black font-semibold text-[15px] flex items-center justify-center gap-3 transition-opacity cursor-pointer"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
               <path
@@ -104,7 +100,7 @@ export default function SignInPage() {
                 d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.99 3.14c.95-2.85 3.6-4.96 6.72-4.96z"
               />
             </svg>
-            {loading ? "Connecting to Google..." : "Sign in with Google"}
+            {loading ? "Connecting..." : "Continue with Google"}
           </button>
 
           {errorMsg && (
@@ -114,91 +110,64 @@ export default function SignInPage() {
           )}
         </div>
 
-        {/* Compact Apple-Minimal Product Preview */}
-        <div className="apple-card p-4 text-left space-y-4">
-          <div className="flex items-center justify-between">
+        {/* Calm Apple Fitness Product Preview */}
+        <div className="apple-card p-5 text-left space-y-4">
+          <div className="flex items-baseline justify-between">
             <div>
-              <div className="text-[10px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
-                How It Works
-              </div>
-              <div className="text-[14px] font-semibold text-white mt-0.5">
-                Relative Effort · Fair Leaderboards
+              <div className="text-[12px] font-medium text-[#86868b]">Relative Effort</div>
+              <div className="text-[15px] font-semibold text-white mt-0.5">
+                Last 7 Days
               </div>
             </div>
-            <span className="px-2.5 py-1 rounded-full bg-[#10e760]/12 border border-[#10e760]/30 text-[11px] font-bold text-[#10e760] tabular-nums">
-              88 / 100
-            </span>
+            <div className="text-right tabular-nums">
+              <span className="text-[22px] font-semibold text-[#30d158]">88</span>
+              <span className="text-[12px] text-[#636366] ml-0.5">/100</span>
+            </div>
           </div>
 
-          {/* Visual 7-Day Preview Strip */}
-          <div className="relative pt-1">
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute left-0 right-0 border-t border-dashed border-white/15"
-              style={{ top: "48px" }}
-            />
-            <div className="grid grid-cols-7 gap-1.5 relative z-10">
-              {PREVIEW_DAYS.map((d, idx) => (
-                <div key={idx} className="flex flex-col items-center gap-1">
-                  <span
-                    className={`text-[10px] font-semibold ${
-                      d.today ? "text-[#10e760]" : "text-[#86868b]"
-                    }`}
-                  >
-                    {d.day}
-                  </span>
-                  <div
-                    className={`w-full h-[64px] rounded-[9px] p-[2px] flex flex-col justify-end bg-[#050506] border ${
-                      d.today
-                        ? "border-[#10e760]/60"
-                        : d.rest
-                        ? "border-dashed border-white/15"
-                        : "border-white/[0.08]"
-                    }`}
-                  >
-                    {d.score !== null ? (
-                      <div
-                        className="w-full rounded-[6px] flex items-start justify-center pt-1"
-                        style={{ height: `${d.pct}%`, backgroundColor: d.color }}
-                      >
-                        <span className={`text-[9px] font-bold tabular-nums leading-none ${d.text}`}>
-                          {d.score}
-                        </span>
-                      </div>
-                    ) : (
-                      <div className="h-full flex items-end justify-center pb-1.5">
-                        <span className="text-[8px] text-[#525257]">Rest</span>
-                      </div>
-                    )}
-                  </div>
+          <div className="grid grid-cols-7 gap-2 pt-1">
+            {PREVIEW_DAYS.map((d, idx) => (
+              <div key={idx} className="flex flex-col items-center gap-1.5">
+                <div className="w-full h-[56px] rounded-[10px] bg-[#1c1c1e] p-[2px] flex flex-col justify-end overflow-hidden">
+                  {d.score !== null ? (
+                    <div
+                      className="w-full rounded-[8px]"
+                      style={{ height: `${d.pct}%`, backgroundColor: d.color }}
+                    />
+                  ) : (
+                    <div className="h-full flex items-end justify-center pb-1.5">
+                      <span className="text-[8px] text-[#636366]">Rest</span>
+                    </div>
+                  )}
                 </div>
-              ))}
-            </div>
+                <span
+                  className={`text-[10px] font-medium ${
+                    d.today ? "text-[#30d158]" : "text-[#86868b]"
+                  }`}
+                >
+                  {d.day}
+                </span>
+              </div>
+            ))}
           </div>
 
-          <div className="space-y-2.5 pt-1 border-t border-white/[0.06] text-[12px]">
-            <div className="flex items-start gap-2.5">
-              <Activity className="w-4 h-4 text-[#10e760] shrink-0 mt-0.5" />
-              <span className="text-[#a1a1a6] leading-snug">
-                <strong className="text-white font-medium">50 = Your Usual:</strong> Compare fairly with gym buddies regardless of starting strength.
-              </span>
+          <div className="divide-y divide-white/[0.06] pt-1 text-[12px] text-[#86868b]">
+            <div className="py-2 flex items-center justify-between gap-2">
+              <span className="text-white font-medium">Fair leaderboards</span>
+              <span>50 = your personal usual</span>
             </div>
-            <div className="flex items-start gap-2.5">
-              <Camera className="w-4 h-4 text-[#10e760] shrink-0 mt-0.5" />
-              <span className="text-[#a1a1a6] leading-snug">
-                <strong className="text-white font-medium">2-Tap Sets &amp; Cardio OCR:</strong> Pre-filled weights, rest timer, PR tracking, and treadmill photo parsing.
-              </span>
+            <div className="py-2 flex items-center justify-between gap-2">
+              <span className="text-white font-medium">Fast logging</span>
+              <span>2-tap sets, rest timer &amp; photo OCR</span>
             </div>
-            <div className="flex items-start gap-2.5">
-              <ShieldCheck className="w-4 h-4 text-[#10e760] shrink-0 mt-0.5" />
-              <span className="text-[#a1a1a6] leading-snug">
-                <strong className="text-white font-medium">Privacy by Default:</strong> Bodyweight stays private; exercise weights only share if you opt in.
-              </span>
+            <div className="pt-2 flex items-center justify-between gap-2">
+              <span className="text-white font-medium">Private by default</span>
+              <span>Bodyweight stays hidden</span>
             </div>
           </div>
         </div>
 
-        <div className="text-[11px] text-[#525257]">Developed by Ifleon</div>
+        <div className="text-[11px] text-[#636366]">Ifleon</div>
       </div>
     </div>
   );
