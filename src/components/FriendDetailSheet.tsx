@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeft, ChevronRight, Lock, Trophy, Unlock, UserMinus } from "lucide-react";
+import { ArrowLeft, ChevronRight, Lock, MapPin, Trophy, Unlock, UserMinus } from "lucide-react";
 import { DaySummary, GridThresholds } from "@/lib/types";
 import { UserMilestoneSummary } from "@/lib/milestones";
 import { buildDayScoreReason, ScoreReasonData } from "@/lib/score-reason";
@@ -22,6 +22,7 @@ export interface FriendDetailPayload {
     shareWorkoutDetails: boolean;
     inGym?: boolean;
     gymStartedAt?: string | null;
+    gymName?: string | null;
   };
   monthStats: {
     monthEffort: number | null;
@@ -104,15 +105,26 @@ export function FriendDetailSheet({
         ) : (
           <div className="space-y-4">
             {/* Live Gym Status Pill */}
-            <div className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.07] text-[12px]">
-              <span className="text-[#86868b]">Current Status</span>
-              {detail.friend.inGym ? (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#10e760]/15 text-[#10e760] font-semibold border border-[#10e760]/40 shadow-[0_0_12px_rgba(16,231,96,0.3)]">
-                  <span className="w-2 h-2 rounded-full bg-[#10e760] animate-pulse" />
-                  In the Gym
-                </span>
-              ) : (
-                <span className="text-[#86868b] font-medium">Not in gym</span>
+            <div className="px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.07] text-[12px] space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[#86868b]">Current Status</span>
+                {detail.friend.inGym ? (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#10e760]/15 text-[#10e760] font-semibold border border-[#10e760]/40 shadow-[0_0_12px_rgba(16,231,96,0.3)]">
+                    <span className="w-2 h-2 rounded-full bg-[#10e760] animate-pulse" />
+                    In the Gym
+                  </span>
+                ) : (
+                  <span className="text-[#86868b] font-medium">Not in gym</span>
+                )}
+              </div>
+              {detail.friend.gymName && (
+                <div className="flex items-center justify-between pt-1.5 border-t border-white/[0.06]">
+                  <span className="text-[#86868b]">Gym</span>
+                  <span className="inline-flex items-center gap-1.5 text-white font-medium">
+                    <MapPin className="w-3.5 h-3.5 text-[#10e760]" />
+                    {detail.friend.gymName}
+                  </span>
+                </div>
               )}
             </div>
 

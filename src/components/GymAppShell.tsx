@@ -38,14 +38,17 @@ import {
   dismissNearbyGym,
   evaluateGymGeofence,
   evaluatePublicGymsArrival,
+  fetchNearbyOsmGym,
   getSavedGymLocation,
   GymLocationConfig,
   isGymGeoSuppressed,
   joinPublicGym,
+  OsmNearbyGym,
   PublicGym,
+  registerOrUpdatePublicGym,
   setGymGeoSuppressed,
 } from "@/lib/gym-location";
-import { apiJoinPublicGym } from "@/lib/client-engine";
+import { apiJoinPublicGym, apiRegisterOrUpdatePublicGym } from "@/lib/client-engine";
 import { triggerHaptic } from "@/lib/haptics";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { CardioLog, ExerciseLog } from "@/lib/types";
@@ -81,6 +84,8 @@ export function GymAppShell() {
   >("idle");
   const [gymDistanceMeters, setGymDistanceMeters] = useState<number | null>(null);
   const [nearbyGymPrompt, setNearbyGymPrompt] = useState<{ gym: PublicGym; distanceMeters: number } | null>(null);
+  const [osmGymPrompt, setOsmGymPrompt] = useState<OsmNearbyGym | null>(null);
+  const [noNearbyGymPrompt, setNoNearbyGymPrompt] = useState(false);
   const [geoRetryNonce, setGeoRetryNonce] = useState(0);
   const geoActivatingRef = useRef(false);
   const stateRef = useRef<AppStatePayload | null>(null);
@@ -647,6 +652,42 @@ export function GymAppShell() {
     await fetchState(dayShift);
     if (next) {
       setCheckinOpen(true);
+      if (
+        !gymLocation?.gymId &&
+        typeof navigator !== "undefined" &&
+        "geolocation" in navigator
+      ) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            const publicArrival = evaluatePublicGymsArrival({
+              currentLat: lat,
+              currentLng: lng,
+              currentGymId: gymLocation?.gymId,
+              userId: state.profile.userId,
+            });
+            if (publicArrival) {
+              setNoNearbyGymPrompt(false);
+              setOsmGymPrompt(null);
+              setNearbyGymPrompt(publicArrival);
+              return;
+            }
+            void fetchNearbyOsmGym(lat, lng, 250).then((osmHit) => {
+              if (osmHit) {
+                setNoNearbyGymPrompt(false);
+                setOsmGymPrompt(osmHit);
+              } else {
+                setNoNearbyGymPrompt(true);
+              }
+            });
+          },
+          () => {
+            setNoNearbyGymPrompt(true);
+          },
+          { enableHighAccuracy: true, maximumAge: 30000, timeout: 8000 }
+        );
+      }
     }
   };
 
@@ -682,6 +723,31 @@ export function GymAppShell() {
     triggerHaptic("light");
     dismissNearbyGym(state.profile.userId, targetGymId);
     setNearbyGymPrompt(null);
+  };
+
+  const handleJoinOsmGym = async (osmGym: OsmNearbyGym) => {
+    if (!state) return;
+    triggerHaptic("success");
+    const { gym, config } = registerOrUpdatePublicGym({
+      name: osmGym.name,
+      lat: osmGym.lat,
+      lng: osmGym.lng,
+      radiusMeters: 150,
+      userId: state.profile.userId,
+      userName: state.profile.name,
+    });
+    setGymLocation(config);
+    setOsmGymPrompt(null);
+    setGymGeoSuppressed(state.profile.userId, false);
+    void apiRegisterOrUpdatePublicGym({
+      name: gym.name,
+      lat: gym.lat,
+      lng: gym.lng,
+      radiusMeters: 150,
+      existingGymId: gym.id,
+    });
+    showToast(`Joined ${gym.name}! Auto-check-in is ON.`);
+    await fetchState(dayShift);
   };
 
   const handleRequestLocation = () => {
@@ -725,7 +791,7 @@ export function GymAppShell() {
             </div>
             <div className="min-w-0">
               <div className="text-[13px] font-semibold text-white truncate">
-                You&apos;re at {nearbyGymPrompt.gym.name}
+                Are you at {nearbyGymPrompt.gym.name}?
               </div>
               <div className="text-[11px] text-[#86868b] truncate">
                 {nearbyGymPrompt.gym.memberCount}{" "}
@@ -747,6 +813,85 @@ export function GymAppShell() {
               className="px-3.5 py-1.5 rounded-xl bg-[#10e760] text-black text-[12px] font-semibold hover:bg-[#25d658] cursor-pointer"
             >
               Join
+            </button>
+          </div>
+        </aside>
+      )}
+
+      {/* Floating OpenStreetMap Gym Prompt when no contributor gym matched */}
+      {!nearbyGymPrompt && osmGymPrompt && (
+        <aside
+          aria-label="Detected nearby gym"
+          className="fixed top-2 left-3 right-3 z-50 max-w-[460px] mx-auto p-3.5 rounded-2xl bg-black/95 border border-[#10e760]/40 shadow-2xl backdrop-blur-xl flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-3"
+        >
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-[#10e760]/15 border border-[#10e760]/30 flex items-center justify-center shrink-0">
+              <MapPin className="w-4 h-4 text-[#10e760]" />
+            </div>
+            <div className="min-w-0">
+              <div className="text-[13px] font-semibold text-white truncate">
+                Are you at {osmGymPrompt.name}?
+              </div>
+              <div className="text-[11px] text-[#86868b] truncate">
+                ~{osmGymPrompt.distanceMeters}m away · Join to save &amp; auto-check-in
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => setOsmGymPrompt(null)}
+              className="px-2.5 py-1.5 text-[11px] font-medium text-[#86868b] hover:text-white cursor-pointer"
+            >
+              Not now
+            </button>
+            <button
+              type="button"
+              onClick={() => handleJoinOsmGym(osmGymPrompt)}
+              className="px-3.5 py-1.5 rounded-xl bg-[#10e760] text-black text-[12px] font-semibold hover:bg-[#25d658] cursor-pointer"
+            >
+              Join
+            </button>
+          </div>
+        </aside>
+      )}
+
+      {/* Floating Prompt to Add Gym when None Found Nearby */}
+      {!nearbyGymPrompt && !osmGymPrompt && noNearbyGymPrompt && (
+        <aside
+          aria-label="Add gym location"
+          className="fixed top-2 left-3 right-3 z-50 max-w-[460px] mx-auto p-3.5 rounded-2xl bg-black/95 border border-white/15 shadow-2xl backdrop-blur-xl flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-3"
+        >
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-white/[0.06] border border-white/10 flex items-center justify-center shrink-0">
+              <MapPin className="w-4 h-4 text-[#10e760]" />
+            </div>
+            <div className="min-w-0">
+              <div className="text-[13px] font-semibold text-white truncate">
+                No gym found nearby
+              </div>
+              <div className="text-[11px] text-[#86868b] truncate">
+                Add this gym&apos;s location &amp; name for auto-check-in
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => setNoNearbyGymPrompt(false)}
+              className="px-2.5 py-1.5 text-[11px] font-medium text-[#86868b] hover:text-white cursor-pointer"
+            >
+              Not now
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setNoNearbyGymPrompt(false);
+                setGymLocationOpen(true);
+              }}
+              className="px-3.5 py-1.5 rounded-xl bg-[#10e760] text-black text-[12px] font-semibold hover:bg-[#25d658] cursor-pointer"
+            >
+              Add Gym
             </button>
           </div>
         </aside>

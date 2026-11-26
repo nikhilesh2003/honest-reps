@@ -2557,6 +2557,22 @@ export async function apiGetFriendDetail(friendId: string) {
     includeWorkoutDetailMedals: canSeeDetails,
   });
 
+  const isFriendOrSelf =
+    friendId === user.userId ||
+    state.friendships.some(
+      (f) =>
+        f.status === "accepted" &&
+        ((f.userId === user.userId && f.friendId === friendId) ||
+          (f.userId === friendId && f.friendId === user.userId))
+    );
+  const allPublicGyms =
+    state.publicGyms && state.publicGyms.length > 0
+      ? state.publicGyms
+      : getPublicGyms();
+  const friendGym = isFriendOrSelf
+    ? allPublicGyms.find((g) => g.memberUserIds.includes(friendId))
+    : undefined;
+
   return {
     friend: {
       userId: friend.userId,
@@ -2565,6 +2581,7 @@ export async function apiGetFriendDetail(friendId: string) {
       shareWorkoutDetails: friend.shareWorkoutDetails,
       inGym: isProfileInGym(friend),
       gymStartedAt: isProfileInGym(friend) ? friend.gymStartedAt ?? null : null,
+      gymName: friendGym?.name ?? null,
     },
     monthStats,
     monthDaily: sanitizedSummaries.filter((d) => d.date.startsWith(monthPrefix)),
