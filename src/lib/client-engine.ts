@@ -21,7 +21,13 @@ import {
   recalculateEffortLogsForUser,
 } from "./effort";
 import { computeUserMilestones } from "./milestones";
-import { AppStatePayload, LeaderboardEntry } from "./client-types";
+import {
+  AppStatePayload,
+  LeaderboardEntry,
+  MemberPreviewPayload,
+  MemberRelationshipStatus,
+  MemberSearchResult,
+} from "./client-types";
 import { dispatchServerPush } from "./notifications";
 import { createSupabaseBrowserClient } from "./supabase/client";
 import {
@@ -2587,6 +2593,166 @@ export async function apiGetFriendDetail(friendId: string) {
     monthDaily: sanitizedSummaries.filter((d) => d.date.startsWith(monthPrefix)),
     summaries365: sanitizedSummaries,
     milestones,
+  };
+}
+
+function parseInviteOrUsernameQuery(rawInput: string): string {
+  let cleaned = rawInput.trim();
+  try {
+    if (cleaned.startsWith("http://") || cleaned.startsWith("https://")) {
+      const parsed = new URL(cleaned);
+      const qUser = parsed.searchParams.get("u");
+      if (qUser) cleaned = qUser;
+      else cleaned = parsed.pathname.replace(/^\/invite\//i, "");
+    }
+  } catch {
+    // Not a URL
+  }
+  return cleaned
+    .replace(/^\/invite\//i, "")
+    .replace(/^@/, "")
+    .replace(/\/$/, "")
+    .trim()
+    .toLowerCase();
+}
+
+function getLocalRelationship(
+  state: ReturnType<typeof loadDb>,
+  currentUserId: string,
+  otherUserId: string
+): { status: MemberRelationshipStatus; friendshipId: string | null } {
+  const f = state.friendships.find(
+    (item) =>
+      (item.userId === currentUserId && item.friendId === otherUserId) ||
+      (item.userId === otherUserId && item.friendId === currentUserId)
+  );
+  if (!f) return { status: "none", friendshipId: null };
+  if (f.status === "accepted") return { status: "accepted", friendshipId: f.id };
+  if (f.status === "pending") {
+    return {
+      status: f.userId === currentUserId ? "pending_sent" : "pending_received",
+      friendshipId: f.id,
+    };
+  }
+  return { status: "none", friendshipId: null };
+}
+
+export async function apiSearchMembers(rawQuery: string): Promise<MemberSearchResult[]> {
+  const state = loadDb();
+  const user = state.profiles.find((p) => p.userId === state.currentUserId);
+  if (!user) return [];
+
+  const q = parseInviteOrUsernameQuery(rawQuery);
+  if (!q) return [];
+
+  try {
+    const sb = createSupabaseBrowserClient();
+    if (sb) {
+      const { data: rows, error } = await sb.rpc("search_members", { query_text: q });
+      if (!error && Array.isArray(rows)) {
+        return rows.map((r: {
+          user_id: string;
+          name: string;
+          username: string;
+          goal?: string | null;
+          share_workout_details?: boolean;
+          friendship_status?: MemberRelationshipStatus;
+          friendship_id?: string | null;
+        }) => ({
+          userId: r.user_id,
+          name: r.name,
+          username: r.username,
+          goal: r.goal || undefined,
+          shareWorkoutDetails: Boolean(r.share_workout_details),
+          friendshipStatus: r.friendship_status || "none",
+          friendshipId: r.friendship_id ?? null,
+        }));
+      }
+    }
+  } catch {
+    // Fall back to local search
+  }
+
+  return state.profiles
+    .filter(
+      (p) =>
+        p.userId !== user.userId &&
+        !p.suspended &&
+        (p.username.toLowerCase().includes(q) || p.name.toLowerCase().includes(q))
+    )
+    .slice(0, 20)
+    .map((p) => {
+      const rel = getLocalRelationship(state, user.userId, p.userId);
+      return {
+        userId: p.userId,
+        name: p.name,
+        username: p.username,
+        goal: p.goal || undefined,
+        shareWorkoutDetails: p.shareWorkoutDetails,
+        friendshipStatus: rel.status,
+        friendshipId: rel.friendshipId,
+      };
+    });
+}
+
+export async function apiGetMemberPreview(
+  targetUserId: string
+): Promise<MemberPreviewPayload | null> {
+  const state = loadDb();
+  const user = state.profiles.find((p) => p.userId === state.currentUserId);
+  if (!user) return null;
+
+  try {
+    const sb = createSupabaseBrowserClient();
+    if (sb) {
+      const { data: rows, error } = await sb.rpc("get_member_preview", {
+        target_user_id: targetUserId,
+      });
+      const hit = Array.isArray(rows) ? rows[0] : rows;
+      if (!error && hit && hit.user_id) {
+        return {
+          userId: hit.user_id,
+          name: hit.name,
+          username: hit.username,
+          goal: hit.goal || undefined,
+          shareWorkoutDetails: Boolean(hit.share_workout_details),
+          friendshipStatus: (hit.friendship_status as MemberRelationshipStatus) || "none",
+          friendshipId: hit.friendship_id ?? null,
+          activeDays30d: Number(hit.active_days_30d) || 0,
+          totalWorkouts: Number(hit.total_workouts) || 0,
+        };
+      }
+    }
+  } catch {
+    // Fall back to local preview
+  }
+
+  const target = state.profiles.find((p) => p.userId === targetUserId && !p.suspended);
+  if (!target) return null;
+  const rel = getLocalRelationship(state, user.userId, target.userId);
+  const cutoffIso = addDaysIso(getTodayIso(), -30);
+  const activeDates = new Set<string>();
+  const exLogs = state.exerciseLogs.filter((e) => e.userId === target.userId);
+  const cLogs = state.cardioLogs.filter(
+    (c) => c.userId === target.userId && !c.isRestActivity
+  );
+  for (const e of exLogs) {
+    if (e.date >= cutoffIso) activeDates.add(e.date);
+  }
+  for (const c of cLogs) {
+    if (c.date >= cutoffIso) activeDates.add(c.date);
+  }
+
+  return {
+    userId: target.userId,
+    name: target.name,
+    username: target.username,
+    goal: target.goal || undefined,
+    shareWorkoutDetails: target.shareWorkoutDetails,
+    friendshipStatus: rel.status,
+    friendshipId: rel.friendshipId,
+    activeDays30d: activeDates.size,
+    totalWorkouts: exLogs.length + cLogs.length,
   };
 }
 

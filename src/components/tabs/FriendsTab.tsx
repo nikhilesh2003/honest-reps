@@ -11,8 +11,16 @@ import {
   MessageCircle,
   Dumbbell,
   Trophy,
+  Search,
+  ArrowLeft,
+  Lock,
+  Unlock,
 } from "lucide-react";
-import { AppStatePayload } from "@/lib/client-types";
+import {
+  AppStatePayload,
+  MemberPreviewPayload,
+  MemberSearchResult,
+} from "@/lib/client-types";
 import {
   buildInviteShareText,
   getInviteUrl,
@@ -21,7 +29,9 @@ import {
 import {
   apiFriendAction,
   apiGetFriendDetail,
+  apiGetMemberPreview,
   apiRemoveFriend,
+  apiSearchMembers,
   apiSendFriendRequest,
   apiSyncFriendsNow,
 } from "@/lib/client-engine";
@@ -46,6 +56,10 @@ export function FriendsTab({
   const [addOpen, setAddOpen] = useState(false);
   const [usernameInput, setUsernameInput] = useState("");
   const [sendingReq, setSendingReq] = useState(false);
+  const [searchResults, setSearchResults] = useState<MemberSearchResult[]>([]);
+  const [searchingMembers, setSearchingMembers] = useState(false);
+  const [selectedPreview, setSelectedPreview] = useState<MemberPreviewPayload | null>(null);
+  const [loadingPreview, setLoadingPreview] = useState(false);
 
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -56,6 +70,51 @@ export function FriendsTab({
     void apiSyncFriendsNow().then(() => onRefresh());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!addOpen) {
+      setSelectedPreview(null);
+      setSearchResults([]);
+      setSearchingMembers(false);
+      return;
+    }
+    const q = usernameInput.trim();
+    if (!q) {
+      setSearchResults([]);
+      setSearchingMembers(false);
+      return;
+    }
+    let cancelled = false;
+    setSearchingMembers(true);
+    const timer = setTimeout(() => {
+      void apiSearchMembers(q)
+        .then((rows) => {
+          if (!cancelled) setSearchResults(rows);
+        })
+        .finally(() => {
+          if (!cancelled) setSearchingMembers(false);
+        });
+    }, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [addOpen, usernameInput]);
+
+  const openMemberPreview = async (member: MemberSearchResult) => {
+    setLoadingPreview(true);
+    setSelectedPreview({
+      ...member,
+      activeDays30d: 0,
+      totalWorkouts: 0,
+    });
+    try {
+      const full = await apiGetMemberPreview(member.userId);
+      if (full) setSelectedPreview(full);
+    } finally {
+      setLoadingPreview(false);
+    }
+  };
 
   const friendsList = state.leaderboard.filter((m) => !m.isMe);
   const inGymCount = friendsList.filter((f) => f.inGym).length;
@@ -91,18 +150,26 @@ export function FriendsTab({
     handleCopyInvite();
   };
 
-  const handleSendRequest = async () => {
-    if (!usernameInput.trim()) return;
+  const handleSendRequest = async (explicitTarget?: string) => {
+    const raw = (explicitTarget ?? usernameInput).trim();
+    if (!raw) return;
     setSendingReq(true);
     try {
-      const data = await apiSendFriendRequest(usernameInput.trim());
+      const data = await apiSendFriendRequest(raw);
       if (!data.ok) {
         onToast(data.error || "Could not send request", "error");
         return;
       }
       onToast(`Request sent to @${data.targetUsername}`);
-      setUsernameInput("");
-      setAddOpen(false);
+      if (selectedPreview) {
+        setSelectedPreview({
+          ...selectedPreview,
+          friendshipStatus: "pending_sent",
+        });
+      } else {
+        setUsernameInput("");
+        setAddOpen(false);
+      }
       onRefresh();
     } finally {
       setSendingReq(false);
@@ -336,68 +403,256 @@ export function FriendsTab({
       <BottomSheet
         open={addOpen}
         onClose={() => setAddOpen(false)}
-        title="Add Friend"
-        subtitle="Send a request by username or share your invite link."
+        title={selectedPreview ? selectedPreview.name : "Add Friend"}
+        subtitle={
+          selectedPreview
+            ? `@${selectedPreview.username}`
+            : "Search by name or @username, preview profile, then connect."
+        }
       >
-        <div className="space-y-5">
-          <div className="space-y-2">
-            <label className="block text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
-              Username
-            </label>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={usernameInput}
-                onChange={(e) => setUsernameInput(e.target.value)}
-                placeholder="@dev_iron"
-                className="flex-1 h-11 px-3.5 rounded-xl bg-black border border-white/12 text-white text-[14px] focus:outline-none focus:border-[#10e760]"
-              />
-              <button
-                type="button"
-                disabled={sendingReq || !usernameInput.trim()}
-                onClick={handleSendRequest}
-                className="px-5 h-11 rounded-xl bg-[#10e760] hover:bg-[#25d658] disabled:opacity-40 text-black font-semibold text-[14px] cursor-pointer"
-              >
-                Send
-              </button>
-            </div>
-          </div>
-
-          <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] space-y-2.5">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
-              Your Invite Link
-            </div>
-            <div className="text-[12px] text-[#a1a1a6] break-all font-mono">
-              {inviteLink}
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => openWhatsAppShare(inviteShareText)}
-                className="h-10 rounded-xl bg-[#10e760] hover:bg-[#25d658] text-black text-[13px] font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <MessageCircle className="w-3.5 h-3.5" />
-                WhatsApp
-              </button>
-              <button
-                type="button"
-                onClick={handleNativeInviteShare}
-                className="h-10 rounded-xl bg-white/[0.07] hover:bg-white/[0.12] text-white text-[13px] font-medium flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <Share2 className="w-3.5 h-3.5" />
-                Share
-              </button>
-            </div>
+        {selectedPreview ? (
+          <div className="space-y-4">
             <button
               type="button"
-              onClick={handleCopyInvite}
-              className="w-full h-9 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-[#a1a1a6] hover:text-white text-[12px] font-medium flex items-center justify-center gap-1.5 cursor-pointer"
+              onClick={() => setSelectedPreview(null)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] text-[12px] font-medium text-white cursor-pointer"
             >
-              <Copy className="w-3.5 h-3.5" />
-              Copy Link
+              <ArrowLeft className="w-3.5 h-3.5" />
+              Back to Search
             </button>
+
+            <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-[#10e760]/15 border border-[#10e760]/30 flex items-center justify-center text-[16px] font-bold text-[#10e760] shrink-0">
+                  {selectedPreview.name.slice(0, 1).toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[16px] font-semibold text-white truncate">
+                    {selectedPreview.name}
+                  </div>
+                  <div className="text-[12px] text-[#86868b] truncate">
+                    @{selectedPreview.username}
+                  </div>
+                </div>
+              </div>
+
+              {selectedPreview.goal && (
+                <div className="inline-flex items-center px-2.5 py-1 rounded-full bg-white/[0.05] border border-white/[0.08] text-[11px] font-medium text-white">
+                  Goal: {selectedPreview.goal}
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <div className="p-3 rounded-xl bg-black/40 border border-white/[0.06] text-center">
+                  <div className="text-[18px] font-bold text-[#10e760] tabular-nums">
+                    {loadingPreview ? "…" : `${selectedPreview.activeDays30d}d`}
+                  </div>
+                  <div className="text-[10px] uppercase tracking-[0.06em] text-[#86868b] mt-0.5">
+                    Active (30d)
+                  </div>
+                </div>
+                <div className="p-3 rounded-xl bg-black/40 border border-white/[0.06] text-center">
+                  <div className="text-[18px] font-bold text-white tabular-nums">
+                    {loadingPreview ? "…" : selectedPreview.totalWorkouts}
+                  </div>
+                  <div className="text-[10px] uppercase tracking-[0.06em] text-[#86868b] mt-0.5">
+                    Total Logs
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-black/40 border border-white/[0.06] text-[11px] text-[#86868b]">
+                {selectedPreview.shareWorkoutDetails ? (
+                  <>
+                    <Unlock className="w-3.5 h-3.5 text-[#10e760] shrink-0" />
+                    <span>Shares workout details with friends</span>
+                  </>
+                ) : (
+                  <>
+                    <Lock className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
+                    <span>Summary only · Exercise weights private</span>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {selectedPreview.friendshipStatus === "none" && (
+              <button
+                type="button"
+                disabled={sendingReq}
+                onClick={() => handleSendRequest(selectedPreview.username)}
+                className="w-full h-11 rounded-xl bg-[#10e760] hover:bg-[#25d658] disabled:opacity-40 text-black font-semibold text-[14px] flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <UserPlus className="w-4 h-4" />
+                {sendingReq ? "Sending..." : "Send Friend Request"}
+              </button>
+            )}
+
+            {selectedPreview.friendshipStatus === "pending_sent" && (
+              <div className="w-full h-11 rounded-xl bg-white/[0.05] border border-white/[0.08] text-[#86868b] font-semibold text-[13px] flex items-center justify-center">
+                Friend Request Sent
+              </div>
+            )}
+
+            {selectedPreview.friendshipStatus === "pending_received" &&
+              selectedPreview.friendshipId && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await handleRequestAction(
+                      selectedPreview.friendshipId!,
+                      "accept"
+                    );
+                    setSelectedPreview({
+                      ...selectedPreview,
+                      friendshipStatus: "accepted",
+                    });
+                  }}
+                  className="w-full h-11 rounded-xl bg-[#10e760] hover:bg-[#25d658] text-black font-semibold text-[14px] flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Check className="w-4 h-4" />
+                  Accept Friend Request
+                </button>
+              )}
+
+            {selectedPreview.friendshipStatus === "accepted" && (
+              <button
+                type="button"
+                onClick={() => {
+                  const uid = selectedPreview.userId;
+                  setAddOpen(false);
+                  void openFriendDetail(uid);
+                }}
+                className="w-full h-11 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] text-white font-semibold text-[14px] flex items-center justify-center gap-2 cursor-pointer"
+              >
+                View Full Friend Profile
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            )}
           </div>
-        </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="block text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
+                Search Members
+              </label>
+              <div className="relative flex items-center">
+                <Search className="w-4 h-4 text-[#86868b] absolute left-3.5 pointer-events-none" />
+                <input
+                  type="text"
+                  value={usernameInput}
+                  onChange={(e) => setUsernameInput(e.target.value)}
+                  placeholder="Name, @username, or invite link..."
+                  className="w-full h-11 pl-10 pr-3.5 rounded-xl bg-black border border-white/12 text-white text-[14px] focus:outline-none focus:border-[#10e760]"
+                />
+              </div>
+            </div>
+
+            {usernameInput.trim().length > 0 && (
+              <div className="space-y-1.5 max-h-60 overflow-y-auto">
+                {searchingMembers ? (
+                  <div className="py-5 text-center text-[12px] text-[#86868b]">
+                    Searching profiles...
+                  </div>
+                ) : searchResults.length === 0 ? (
+                  <div className="py-5 text-center text-[12px] text-[#86868b] space-y-2">
+                    <div>No matching profiles found.</div>
+                    {(usernameInput.includes("http") ||
+                      usernameInput.includes("/invite")) && (
+                      <button
+                        type="button"
+                        disabled={sendingReq}
+                        onClick={() => handleSendRequest()}
+                        className="px-4 py-1.5 rounded-lg bg-[#10e760] text-black text-[12px] font-semibold cursor-pointer"
+                      >
+                        Try Invite Link
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  searchResults.map((m) => (
+                    <button
+                      key={m.userId}
+                      type="button"
+                      onClick={() => openMemberPreview(m)}
+                      className="w-full p-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.07] flex items-center justify-between gap-3 text-left cursor-pointer transition-colors"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-9 h-9 rounded-full bg-white/[0.08] flex items-center justify-center text-[13px] font-semibold text-white shrink-0">
+                          {m.name.slice(0, 1).toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-[13px] font-semibold text-white truncate">
+                            {m.name}
+                          </div>
+                          <div className="text-[11px] text-[#86868b] truncate">
+                            @{m.username}
+                            {m.goal ? ` · ${m.goal}` : ""}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {m.friendshipStatus === "accepted" ? (
+                          <span className="px-2 py-0.5 rounded-full bg-[#10e760]/15 text-[#10e760] text-[10px] font-semibold">
+                            Friends
+                          </span>
+                        ) : m.friendshipStatus === "pending_sent" ? (
+                          <span className="px-2 py-0.5 rounded-full bg-white/[0.06] text-[#86868b] text-[10px] font-medium">
+                            Sent
+                          </span>
+                        ) : m.friendshipStatus === "pending_received" ? (
+                          <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 text-[10px] font-semibold">
+                            Pending
+                          </span>
+                        ) : (
+                          <span className="text-[11px] font-medium text-[#10e760]">
+                            View
+                          </span>
+                        )}
+                        <ChevronRight className="w-4 h-4 text-[#525257]" />
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+
+            <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] space-y-2.5">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
+                Your Invite Link
+              </div>
+              <div className="text-[12px] text-[#a1a1a6] break-all font-mono">
+                {inviteLink}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => openWhatsAppShare(inviteShareText)}
+                  className="h-10 rounded-xl bg-[#10e760] hover:bg-[#25d658] text-black text-[13px] font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <MessageCircle className="w-3.5 h-3.5" />
+                  WhatsApp
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNativeInviteShare}
+                  className="h-10 rounded-xl bg-white/[0.07] hover:bg-white/[0.12] text-white text-[13px] font-medium flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                  Share
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={handleCopyInvite}
+                className="w-full h-9 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-[#a1a1a6] hover:text-white text-[12px] font-medium flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <Copy className="w-3.5 h-3.5" />
+                Copy Link
+              </button>
+            </div>
+          </div>
+        )}
       </BottomSheet>
 
       <FriendDetailSheet

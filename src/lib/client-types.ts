@@ -42,6 +42,27 @@ export interface FriendRequestSummary {
   createdAt: string;
 }
 
+export type MemberRelationshipStatus =
+  | "none"
+  | "pending_sent"
+  | "pending_received"
+  | "accepted";
+
+export interface MemberSearchResult {
+  userId: string;
+  name: string;
+  username: string;
+  goal?: string;
+  shareWorkoutDetails: boolean;
+  friendshipStatus: MemberRelationshipStatus;
+  friendshipId?: string | null;
+}
+
+export interface MemberPreviewPayload extends MemberSearchResult {
+  activeDays30d: number;
+  totalWorkouts: number;
+}
+
 export interface AppStatePayload {
   authenticated: boolean;
   suspended?: boolean;
